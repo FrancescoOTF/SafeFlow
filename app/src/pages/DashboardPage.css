@@ -244,3 +244,33 @@
     grid-template-columns: 1fr;
   }
 }
+/* ===== FIX: testo cliente non deve finire sotto l'accent bar ===== */
+.risk-table tbody td:first-child {
+  padding-left: 28px; /* compensazione barra a sinistra */
+}
+
+/* accent bar: resta attaccata al bordo senza entrare nel contenuto */
+.risk-row::before {
+  left: -1px;
+}
+
+/* ===== Punto 1: LOW meno rumorosi (ma leggibili) ===== */
+.risk-low {
+  opacity: 0.65;
+}
+
+.risk-low:hover {
+  opacity: 1;
+}
+
+/* ===== Punto 2: CTA più forte per MEDIUM/HIGH ===== */
+.btn.btn-danger.btn-sm {
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.btn.btn-warning.btn-sm {
+  background-color: var(--color-warning);
+  border-color: var(--color-warning);
+  color: #000;
+}
