@@ -31,7 +31,8 @@ export default function DashboardPage() {
   /* ===== RISK LOGIC FIX ===== */
   const getEffectiveRiskLevel = (client) => {
     if (client.expired > 0) return 'HIGH'
-    return client.level
+    if (client.risk > 0 || client.missing > 0) return 'MEDIUM'
+    return 'LOW'
   }
 
   const getCtaClass = (level) => {
