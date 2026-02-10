@@ -18,9 +18,7 @@ export default function DashboardPage() {
   const fetchClientsRisk = async () => {
     try {
       const { data, error } = await supabase.rpc('get_clients_risk')
-
       if (error) throw error
-
       setClients(data || [])
     } catch (error) {
       console.error('Error fetching clients risk:', error)
@@ -61,16 +59,25 @@ export default function DashboardPage() {
     )
   }
 
-  const totals = clients.reduce((acc, client) => ({
-    expired: acc.expired + client.expired,
-    risk: acc.risk + client.risk,
-    missing: acc.missing + client.missing
-  }), { expired: 0, risk: 0, missing: 0 })
+  const totals = clients.reduce(
+    (acc, client) => ({
+      expired: acc.expired + client.expired,
+      risk: acc.risk + client.risk,
+      missing: acc.missing + client.missing
+    }),
+    { expired: 0, risk: 0, missing: 0 }
+  )
+
+  const getCtaClass = (level) => {
+    if (level === 'HIGH') return 'btn btn-danger btn-sm'
+    if (level === 'MEDIUM') return 'btn btn-warning btn-sm'
+    return 'btn btn-secondary btn-sm'
+  }
 
   return (
     <div className="dashboard-layout">
       <DashboardNav />
-      
+
       <div className="dashboard-content">
         <div className="dashboard-header">
           <h1>Dashboard Rischio Clienti</h1>
@@ -121,7 +128,7 @@ export default function DashboardPage() {
 
         <div className="risk-table-container">
           <h2>Clienti Corporate - Ordinamento per Rischio</h2>
-          
+
           {clients.length === 0 ? (
             <div className="empty-state">
               <AlertTriangle size={48} />
@@ -132,68 +139,98 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="risk-table-scroll">
-  <table className="risk-table">
-    <colgroup>
-      <col style={{ width: '28%' }} />
-      <col style={{ width: '12%' }} />
-      <col style={{ width: '10%' }} />
-      <col style={{ width: '10%' }} />
-      <col style={{ width: '12%' }} />
-      <col style={{ width: '12%' }} />
-      <col style={{ width: '16%' }} />
-    </colgroup>
+              <table className="risk-table">
+                <colgroup>
+                  <col style={{ width: '28%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '16%' }} />
+                </colgroup>
 
-    <thead>
-      <tr>
-        <th>Cliente</th>
-        <th>Risk Level</th>
-        <th>Risk Score</th>
-        <th className="text-center">Scaduti</th>
-        <th className="text-center">In Scadenza</th>
-        <th className="text-center">Mancanti</th>
-        <th>Azioni</th>
-      </tr>
-    </thead>
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Risk Level</th>
+                    <th>Risk Score</th>
+                    <th className="text-center">Scaduti</th>
+                    <th className="text-center">In Scadenza</th>
+                    <th className="text-center">Mancanti</th>
+                    <th>Azioni</th>
+                  </tr>
+                </thead>
 
-    <tbody>
-      {clients.map(client => (
-        <tr key={client.client_id} className={`risk-row risk-${client.level.toLowerCase()}`}>
-          <td className="client-name"><strong>{client.name}</strong></td>
+                <tbody>
+                  {clients.map((client) => (
+                    <tr
+                      key={client.client_id}
+                      className={`risk-row risk-${String(client.level || '').toLowerCase()}`}
+                    >
+                      <td className="client-name">
+                        <strong>{client.name}</strong>
+                      </td>
 
-          <td>
-            <span
-              className="risk-badge"
-              style={{
-                backgroundColor: `${getRiskLevelColor(client.level)}20`,
-                color: getRiskLevelColor(client.level),
-                border: `1px solid ${getRiskLevelColor(client.level)}`
-              }}
-            >
-              {client.level}
-            </span>
-          </td>
+                      <td>
+                        <span
+                          className="risk-badge"
+                          style={{
+                            backgroundColor: `${getRiskLevelColor(client.level)}20`,
+                            color: getRiskLevelColor(client.level),
+                            border: `1px solid ${getRiskLevelColor(client.level)}`
+                          }}
+                        >
+                          {client.level}
+                        </span>
+                      </td>
 
-          <td>
-            <span className="risk-score" style={{ color: getRiskLevelColor(client.level) }}>
-              {client.score}
-            </span>
-          </td>
+                      <td>
+                        <span
+                          className="risk-score"
+                          style={{ color: getRiskLevelColor(client.level) }}
+                        >
+                          {client.score}
+                        </span>
+                      </td>
 
-          <td className="text-center">{client.expired > 0 ? <span className="count-badge expired">{client.expired}</span> : <span className="count-badge ok">0</span>}</td>
-          <td className="text-center">{client.risk > 0 ? <span className="count-badge risk">{client.risk}</span> : <span className="count-badge ok">0</span>}</td>
-          <td className="text-center">{client.missing > 0 ? <span className="count-badge missing">{client.missing}</span> : <span className="count-badge ok">0</span>}</td>
+                      <td className="text-center">
+                        {client.expired > 0 ? (
+                          <span className="count-badge expired">{client.expired}</span>
+                        ) : (
+                          <span className="count-badge ok">0</span>
+                        )}
+                      </td>
 
-          <td>
-            <Link to={`/clients/${client.client_id}`} className="btn btn-secondary btn-sm">
-              Vedi Dettaglio
-            </Link>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+                      <td className="text-center">
+                        {client.risk > 0 ? (
+                          <span className="count-badge risk">{client.risk}</span>
+                        ) : (
+                          <span className="count-badge ok">0</span>
+                        )}
+                      </td>
 
+                      <td className="text-center">
+                        {client.missing > 0 ? (
+                          <span className="count-badge missing">{client.missing}</span>
+                        ) : (
+                          <span className="count-badge ok">0</span>
+                        )}
+                      </td>
+
+                      <td>
+                        <Link
+                          to={`/clients/${client.client_id}`}
+                          className={getCtaClass(client.level)}
+                        >
+                          Vedi Dettaglio
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
