@@ -148,57 +148,35 @@
   white-space: nowrap;
 }
 
+/* ===== FIX DEFINITIVO ALLINEAMENTO ===== */
+
+/* niente background sul TR */
 .risk-table tbody tr {
   position: relative;
-  background-color: var(--color-bg-secondary);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: transparent;
 }
 
-/* accent bar */
-.risk-table tbody tr::before {
-  content: "";
-  position: absolute;
-  left: -1px;
-  top: 10px;
-  bottom: 10px;
-  width: 4px;
-  border-radius: 4px;
-}
-
-.risk-high::before {
-  background-color: var(--color-danger);
-}
-
-.risk-medium::before {
-  background-color: var(--color-warning);
-}
-
-.risk-low::before {
-  background-color: var(--color-success);
-}
-
-/* celle */
+/* background sui TD */
 .risk-table tbody td {
+  background-color: var(--color-bg-secondary);
   padding: 14px 16px;
   vertical-align: middle;
   white-space: nowrap;
 }
 
-/* CLIENT NAME — FIX VISIBILITÀ */
-.risk-table tbody td:first-child {
-  padding-left: 28px;          /* ← FIX CHIAVE */
+/* angoli e spazio nome */
+.risk-table tbody tr td:first-child {
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  padding-left: 28px;
   font-weight: 600;
 }
 
-/* arrotondamenti */
-.risk-table tbody tr td:first-child {
-  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-}
-
+/* angoli e azioni */
 .risk-table tbody tr td:last-child {
   border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   text-align: right;
 }
+
 
 /* ===== Punto 1️⃣: riduci rumore LOW ===== */
 .risk-low {
@@ -284,7 +262,11 @@
 .client-name strong { color: var(--color-text); }
 
 /* --- Se l’opacità ti uccide i nomi, rendi l’opacità solo “di sfondo” --- */
-.risk-low { opacity: 1; }
-.risk-low td { opacity: 0.75; }
-.risk-low td:first-child,
-.risk-low td:first-chil
+/* --- LOW meno rumorosi senza uccidere il nome --- */
+.risk-low td {
+  opacity: 0.75;
+}
+
+.risk-low td:first-child {
+  opacity: 1;
+}
