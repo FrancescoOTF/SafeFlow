@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AlertTriangle, TrendingUp, FileX, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { getRiskLevelColor } from '../lib/riskCalculator'
+import { getEffectiveRiskLevel } from '../lib/riskUtils'
 import DashboardNav from '../components/DashboardNav'
 import './DashboardPage.css'
 
@@ -28,17 +29,21 @@ export default function DashboardPage() {
     }
   }
 
-  /* ===== RISK LOGIC FIX ===== */
-  const getEffectiveRiskLevel = (client) => {
-    if (client.expired > 0) return 'HIGH'
-    if (client.risk > 0 || client.missing > 0) return 'MEDIUM'
-    return 'LOW'
-  }
-
   const getCtaClass = (level) => {
     if (level === 'HIGH') return 'btn btn-danger btn-sm'
     if (level === 'MEDIUM') return 'btn btn-warning btn-sm'
     return 'btn btn-secondary btn-sm'
+  }
+
+  const getTopReason = (client) => {
+    const expired = client?.expired ?? 0
+    const missing = client?.missing ?? 0
+    const risk = client?.risk ?? 0
+
+    if (expired > 0) return `${expired} scadut${expired === 1 ? 'o' : 'i'}`
+    if (missing > 0) return `${missing} mancant${missing === 1 ? 'e' : 'i'}`
+    if (risk > 0) return `${risk} in scadenz${risk === 1 ? 'a' : 'a'}`
+    return 'OK'
   }
 
   if (loading) {
@@ -148,19 +153,21 @@ export default function DashboardPage() {
             <div className="risk-table-scroll">
               <table className="risk-table">
                 <colgroup>
-                  <col style={{ width: '28%' }} />
+                  <col style={{ width: '26%' }} />
+                  <col style={{ width: '12%' }} />
                   <col style={{ width: '12%' }} />
                   <col style={{ width: '10%' }} />
                   <col style={{ width: '10%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '16%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '10%' }} />
                 </colgroup>
 
                 <thead>
                   <tr>
                     <th>Cliente</th>
                     <th>Risk Level</th>
+                    <th>Motivo</th>
                     <th>Risk Score</th>
                     <th className="text-center">Scaduti</th>
                     <th className="text-center">In Scadenza</th>
@@ -173,6 +180,7 @@ export default function DashboardPage() {
                   {clients.map((client) => {
                     const level = getEffectiveRiskLevel(client)
                     const color = getRiskLevelColor(level)
+                    const reason = getTopReason(client)
 
                     return (
                       <tr
@@ -194,6 +202,10 @@ export default function DashboardPage() {
                           >
                             {level}
                           </span>
+                        </td>
+
+                        <td>
+                          <span className="risk-reason">{reason}</span>
                         </td>
 
                         <td>
