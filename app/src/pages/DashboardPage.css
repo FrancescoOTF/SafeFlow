@@ -130,17 +130,8 @@
 }
 
 /* =======================
-   RISK TABLE (CORE FIX)
+   RISK TABLE
 ======================= */
-.risk-table-container {
-  margin-top: var(--spacing-2xl);
-}
-
-.risk-table-scroll {
-  width: 100%;
-  overflow-x: auto;
-  padding-bottom: 6px;
-}
 
 .risk-table {
   width: 100%;
@@ -158,48 +149,16 @@
 }
 
 .risk-table tbody tr {
+  position: relative;
   background-color: var(--color-bg-secondary);
   border: 1px solid rgba(255,255,255,0.06);
 }
 
-.risk-table tbody td {
-  padding: 14px 14px;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
-.risk-table tbody tr td:first-child {
-  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-  font-weight: 600;
-}
-
-.risk-table tbody tr td:last-child {
-  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-  text-align: right;
-}
-
-.client-name strong {
-  max-width: 420px;
-  display: inline-block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Action button: meno rumore */
-.btn.btn-secondary.btn-sm {
-  padding: 10px 14px;
-  font-size: 13px;
-  border-radius: 10px;
-}
-/* Risk emphasis: guida l'occhio */
-.risk-row {
-  position: relative;
-}
-
-.risk-row::before {
+/* accent bar */
+.risk-table tbody tr::before {
   content: "";
   position: absolute;
-  left: 0;
+  left: -1px;
   top: 10px;
   bottom: 10px;
   width: 4px;
@@ -216,6 +175,50 @@
 
 .risk-low::before {
   background-color: var(--color-success);
+}
+
+/* celle */
+.risk-table tbody td {
+  padding: 14px 16px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* CLIENT NAME — FIX VISIBILITÀ */
+.risk-table tbody td:first-child {
+  padding-left: 28px;          /* ← FIX CHIAVE */
+  font-weight: 600;
+}
+
+/* arrotondamenti */
+.risk-table tbody tr td:first-child {
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+
+.risk-table tbody tr td:last-child {
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  text-align: right;
+}
+
+/* ===== Punto 1️⃣: riduci rumore LOW ===== */
+.risk-low {
+  opacity: 0.65;
+}
+
+.risk-low:hover {
+  opacity: 1;
+}
+
+/* ===== Bottoni ===== */
+.btn.btn-danger {
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.btn.btn-warning {
+  background-color: var(--color-warning);
+  border-color: var(--color-warning);
+  color: #000;
 }
 
 /* =======================
