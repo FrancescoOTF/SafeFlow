@@ -274,3 +274,17 @@
   border-color: var(--color-warning);
   color: #000;
 }
+/* --- Fix stacking: il testo deve stare SOPRA la barra --- */
+.risk-row { position: relative; }
+.risk-row::before { z-index: 0; }
+.risk-row td { position: relative; z-index: 1; }
+
+/* --- Fix visibilità cliente: padding + colore forzato --- */
+.risk-table tbody td:first-child { padding-left: 28px; }
+.client-name strong { color: var(--color-text); }
+
+/* --- Se l’opacità ti uccide i nomi, rendi l’opacità solo “di sfondo” --- */
+.risk-low { opacity: 1; }
+.risk-low td { opacity: 0.75; }
+.risk-low td:first-child,
+.risk-low td:first-chil
