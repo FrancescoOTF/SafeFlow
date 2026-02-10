@@ -28,6 +28,18 @@ export default function DashboardPage() {
     }
   }
 
+  /* ===== RISK LOGIC FIX ===== */
+  const getEffectiveRiskLevel = (client) => {
+    if (client.expired > 0) return 'HIGH'
+    return client.level
+  }
+
+  const getCtaClass = (level) => {
+    if (level === 'HIGH') return 'btn btn-danger btn-sm'
+    if (level === 'MEDIUM') return 'btn btn-warning btn-sm'
+    return 'btn btn-secondary btn-sm'
+  }
+
   if (loading) {
     return (
       <div className="dashboard-layout">
@@ -67,12 +79,6 @@ export default function DashboardPage() {
     }),
     { expired: 0, risk: 0, missing: 0 }
   )
-
-  const getCtaClass = (level) => {
-    if (level === 'HIGH') return 'btn btn-danger btn-sm'
-    if (level === 'MEDIUM') return 'btn btn-warning btn-sm'
-    return 'btn btn-secondary btn-sm'
-  }
 
   return (
     <div className="dashboard-layout">
@@ -163,71 +169,73 @@ export default function DashboardPage() {
                 </thead>
 
                 <tbody>
-                  {clients.map((client) => (
-                    <tr
-                      key={client.client_id}
-                      className={`risk-row risk-${String(client.level || '').toLowerCase()}`}
-                    >
-                      <td className="client-name">
-                        <strong>{client.name}</strong>
-                      </td>
+                  {clients.map((client) => {
+                    const level = getEffectiveRiskLevel(client)
+                    const color = getRiskLevelColor(level)
 
-                      <td>
-                        <span
-                          className="risk-badge"
-                          style={{
-                            backgroundColor: `${getRiskLevelColor(client.level)}20`,
-                            color: getRiskLevelColor(client.level),
-                            border: `1px solid ${getRiskLevelColor(client.level)}`
-                          }}
-                        >
-                          {client.level}
-                        </span>
-                      </td>
+                    return (
+                      <tr
+                        key={client.client_id}
+                        className={`risk-row risk-${level.toLowerCase()}`}
+                      >
+                        <td className="client-name">
+                          <strong>{client.name}</strong>
+                        </td>
 
-                      <td>
-                        <span
-                          className="risk-score"
-                          style={{ color: getRiskLevelColor(client.level) }}
-                        >
-                          {client.score}
-                        </span>
-                      </td>
+                        <td>
+                          <span
+                            className="risk-badge"
+                            style={{
+                              backgroundColor: `${color}20`,
+                              color,
+                              border: 'none'
+                            }}
+                          >
+                            {level}
+                          </span>
+                        </td>
 
-                      <td className="text-center">
-                        {client.expired > 0 ? (
-                          <span className="count-badge expired">{client.expired}</span>
-                        ) : (
-                          <span className="count-badge ok">0</span>
-                        )}
-                      </td>
+                        <td>
+                          <span className="risk-score" style={{ color }}>
+                            {client.score}
+                          </span>
+                        </td>
 
-                      <td className="text-center">
-                        {client.risk > 0 ? (
-                          <span className="count-badge risk">{client.risk}</span>
-                        ) : (
-                          <span className="count-badge ok">0</span>
-                        )}
-                      </td>
+                        <td className="text-center">
+                          {client.expired > 0 ? (
+                            <span className="count-badge expired">{client.expired}</span>
+                          ) : (
+                            <span className="count-badge ok">0</span>
+                          )}
+                        </td>
 
-                      <td className="text-center">
-                        {client.missing > 0 ? (
-                          <span className="count-badge missing">{client.missing}</span>
-                        ) : (
-                          <span className="count-badge ok">0</span>
-                        )}
-                      </td>
+                        <td className="text-center">
+                          {client.risk > 0 ? (
+                            <span className="count-badge risk">{client.risk}</span>
+                          ) : (
+                            <span className="count-badge ok">0</span>
+                          )}
+                        </td>
 
-                      <td>
-                        <Link
-                          to={`/clients/${client.client_id}`}
-                          className={getCtaClass(client.level)}
-                        >
-                          Vedi Dettaglio
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="text-center">
+                          {client.missing > 0 ? (
+                            <span className="count-badge missing">{client.missing}</span>
+                          ) : (
+                            <span className="count-badge ok">0</span>
+                          )}
+                        </td>
+
+                        <td>
+                          <Link
+                            to={`/clients/${client.client_id}`}
+                            className={getCtaClass(level)}
+                          >
+                            Vedi Dettaglio
+                          </Link>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
