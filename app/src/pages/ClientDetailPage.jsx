@@ -15,6 +15,7 @@ import {
   calculateRiskScore,
   getRiskLevelColor,
 } from '../lib/riskCalculator'
+import { getEffectiveRiskLevel } from '../lib/riskUtils'
 import DashboardNav from '../components/DashboardNav'
 import './ClientDetailPage.css'
 
@@ -142,6 +143,11 @@ export default function ClientDetailPage() {
   }
 
   const risk = calculateRiskScore(requirements, uploads)
+  const effectiveLevel = getEffectiveRiskLevel({
+    expired: risk.expired,
+    risk: risk.risk,
+    missing: risk.missing,
+  })
 
   const getRequirementStatus = (requirement) => {
     const relevantUploads = uploads.filter(
@@ -216,16 +222,16 @@ export default function ClientDetailPage() {
               <span
                 className="risk-badge-large"
                 style={{
-                  backgroundColor: `${getRiskLevelColor(risk.level)}20`,
-                  color: getRiskLevelColor(risk.level),
-                  border: `2px solid ${getRiskLevelColor(risk.level)}`,
+                  backgroundColor: `${getRiskLevelColor(effectiveLevel)}20`,
+                  color: getRiskLevelColor(effectiveLevel),
+                  border: `2px solid ${getRiskLevelColor(effectiveLevel)}`,
                 }}
               >
-                {risk.level} RISK
+                {effectiveLevel} RISK
               </span>
               <span
                 className="risk-score-large"
-                style={{ color: getRiskLevelColor(risk.level) }}
+                style={{ color: getRiskLevelColor(effectiveLevel) }}
               >
                 Score: {risk.score}
               </span>
