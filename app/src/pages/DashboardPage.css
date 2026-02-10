@@ -270,3 +270,15 @@
 .risk-low td:first-child {
   opacity: 1;
 }
+/* FIX: CTA HIGH leggibile */
+.btn.btn-danger.btn-sm {
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #000;              /* ← TESTO NERO */
+  font-weight: 600;
+}
+
+.btn.btn-danger.btn-sm:hover {
+  background-color: #ff6b6b; /* leggermente più chiaro */
+  color: #000;
+}
