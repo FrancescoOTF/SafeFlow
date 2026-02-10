@@ -191,6 +191,32 @@
   font-size: 13px;
   border-radius: 10px;
 }
+/* Risk emphasis: guida l'occhio */
+.risk-row {
+  position: relative;
+}
+
+.risk-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 4px;
+  border-radius: 4px;
+}
+
+.risk-high::before {
+  background-color: var(--color-danger);
+}
+
+.risk-medium::before {
+  background-color: var(--color-warning);
+}
+
+.risk-low::before {
+  background-color: var(--color-success);
+}
 
 /* =======================
    RESPONSIVE
