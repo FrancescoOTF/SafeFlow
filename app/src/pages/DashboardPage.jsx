@@ -131,74 +131,69 @@ export default function DashboardPage() {
               </Link>
             </div>
           ) : (
-            <table className="risk-table">
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th>Risk Level</th>
-                  <th>Risk Score</th>
-                  <th className="text-center">Scaduti</th>
-                  <th className="text-center">In Scadenza</th>
-                  <th className="text-center">Mancanti</th>
-                  <th>Azioni</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clients.map(client => (
-                  <tr key={client.client_id} className={`risk-row risk-${client.level.toLowerCase()}`}>
-                    <td className="client-name">
-                      <strong>{client.name}</strong>
-                    </td>
-                    <td>
-                      <span 
-                        className="risk-badge"
-                        style={{ 
-                          backgroundColor: `${getRiskLevelColor(client.level)}20`,
-                          color: getRiskLevelColor(client.level),
-                          border: `1px solid ${getRiskLevelColor(client.level)}`
-                        }}
-                      >
-                        {client.level}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="risk-score" style={{ color: getRiskLevelColor(client.level) }}>
-                        {client.score}
-                      </span>
-                    </td>
-                    <td className="text-center">
-                      {client.expired > 0 ? (
-                        <span className="count-badge expired">{client.expired}</span>
-                      ) : (
-                        <span className="count-badge ok">0</span>
-                      )}
-                    </td>
-                    <td className="text-center">
-                      {client.risk > 0 ? (
-                        <span className="count-badge risk">{client.risk}</span>
-                      ) : (
-                        <span className="count-badge ok">0</span>
-                      )}
-                    </td>
-                    <td className="text-center">
-                      {client.missing > 0 ? (
-                        <span className="count-badge missing">{client.missing}</span>
-                      ) : (
-                        <span className="count-badge ok">0</span>
-                      )}
-                    </td>
-                    <td>
-                      <Link 
-                        to={`/clients/${client.client_id}`} 
-                        className="btn btn-secondary btn-sm"
-                      >
-                        Vedi Dettaglio
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="risk-table-scroll">
+  <table className="risk-table">
+    <colgroup>
+      <col style={{ width: '28%' }} />
+      <col style={{ width: '12%' }} />
+      <col style={{ width: '10%' }} />
+      <col style={{ width: '10%' }} />
+      <col style={{ width: '12%' }} />
+      <col style={{ width: '12%' }} />
+      <col style={{ width: '16%' }} />
+    </colgroup>
+
+    <thead>
+      <tr>
+        <th>Cliente</th>
+        <th>Risk Level</th>
+        <th>Risk Score</th>
+        <th className="text-center">Scaduti</th>
+        <th className="text-center">In Scadenza</th>
+        <th className="text-center">Mancanti</th>
+        <th>Azioni</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {clients.map(client => (
+        <tr key={client.client_id} className={`risk-row risk-${client.level.toLowerCase()}`}>
+          <td className="client-name"><strong>{client.name}</strong></td>
+
+          <td>
+            <span
+              className="risk-badge"
+              style={{
+                backgroundColor: `${getRiskLevelColor(client.level)}20`,
+                color: getRiskLevelColor(client.level),
+                border: `1px solid ${getRiskLevelColor(client.level)}`
+              }}
+            >
+              {client.level}
+            </span>
+          </td>
+
+          <td>
+            <span className="risk-score" style={{ color: getRiskLevelColor(client.level) }}>
+              {client.score}
+            </span>
+          </td>
+
+          <td className="text-center">{client.expired > 0 ? <span className="count-badge expired">{client.expired}</span> : <span className="count-badge ok">0</span>}</td>
+          <td className="text-center">{client.risk > 0 ? <span className="count-badge risk">{client.risk}</span> : <span className="count-badge ok">0</span>}</td>
+          <td className="text-center">{client.missing > 0 ? <span className="count-badge missing">{client.missing}</span> : <span className="count-badge ok">0</span>}</td>
+
+          <td>
+            <Link to={`/clients/${client.client_id}`} className="btn btn-secondary btn-sm">
+              Vedi Dettaglio
+            </Link>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
           )}
         </div>
       </div>
