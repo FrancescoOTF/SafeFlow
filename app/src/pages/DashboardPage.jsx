@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, TrendingUp, FileX, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { getRiskLevelColor } from '../lib/riskCalculator'
-import { getEffectiveRiskLevel } from '../lib/riskUtils'
 import DashboardNav from '../components/DashboardNav'
 import './DashboardPage.css'
 
@@ -14,16 +12,41 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchClientsRisk()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchClientsRisk = async () => {
     try {
-      const { data, error } = await supabase.rpc('get_clients_risk')
+      setLoading(true)
+      setError(null)
+
+      // Single source of truth: DB view
+      const { data, error } = await supabase
+        .from('v_client_risk')
+        .select(
+          'corporate_client_id, client_name, effective_risk, risk_score, expired_count, risk_count, missing_count'
+        )
+        .order('risk_score', { ascending: false })
+        .order('client_name', { ascending: true })
+
       if (error) throw error
-      setClients(data || [])
-    } catch (error) {
-      console.error('Error fetching clients risk:', error)
-      setError(error.message)
+
+      // Normalize shape for existing UI
+      const mapped = (data || []).map((r) => ({
+        client_id: r.corporate_client_id,
+        name: r.client_name,
+        level: r.effective_risk,
+        score: r.risk_score,
+        expired: r.expired_count ?? 0,
+        risk: r.risk_count ?? 0,
+        missing: r.missing_count ?? 0
+      }))
+
+      setClients(mapped)
+    } catch (e) {
+      console.error('Error fetching clients risk:', e)
+      setError(e?.message ?? String(e))
+      setClients([])
     } finally {
       setLoading(false)
     }
@@ -35,6 +58,13 @@ export default function DashboardPage() {
     return 'btn btn-secondary btn-sm'
   }
 
+  // No more frontend risk logic: level comes from DB
+  const getRiskColor = (level) => {
+    if (level === 'HIGH') return '#ef4444'   // red
+    if (level === 'MEDIUM') return '#f59e0b' // amber
+    return '#22c55e'                         // green
+  }
+
   const getTopReason = (client) => {
     const expired = client?.expired ?? 0
     const missing = client?.missing ?? 0
@@ -42,7 +72,7 @@ export default function DashboardPage() {
 
     if (expired > 0) return `${expired} scadut${expired === 1 ? 'o' : 'i'}`
     if (missing > 0) return `${missing} mancant${missing === 1 ? 'e' : 'i'}`
-    if (risk > 0) return `${risk} in scadenz${risk === 1 ? 'a' : 'a'}`
+    if (risk > 0) return `${risk} in scadenza`
     return 'OK'
   }
 
@@ -79,9 +109,9 @@ export default function DashboardPage() {
 
   const totals = clients.reduce(
     (acc, client) => ({
-      expired: acc.expired + client.expired,
-      risk: acc.risk + client.risk,
-      missing: acc.missing + client.missing
+      expired: acc.expired + (client.expired ?? 0),
+      risk: acc.risk + (client.risk ?? 0),
+      missing: acc.missing + (client.missing ?? 0)
     }),
     { expired: 0, risk: 0, missing: 0 }
   )
@@ -178,14 +208,14 @@ export default function DashboardPage() {
 
                 <tbody>
                   {clients.map((client) => {
-                    const level = getEffectiveRiskLevel(client)
-                    const color = getRiskLevelColor(level)
+                    const level = client.level
+                    const color = getRiskColor(level)
                     const reason = getTopReason(client)
 
                     return (
                       <tr
                         key={client.client_id}
-                        className={`risk-row risk-${level.toLowerCase()}`}
+                        className={`risk-row risk-${String(level).toLowerCase()}`}
                       >
                         <td className="client-name">
                           <strong>{client.name}</strong>
