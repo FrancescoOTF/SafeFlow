@@ -13,7 +13,7 @@
  * @param {string|Date|null|undefined} expiresAt - ISO date string or Date
  * @returns {'OK'|'RISK'|'EXPIRED'}
  */
-export function calculateDocumentStatus(expiresAt) {
+/**export function calculateDocumentStatus(expiresAt) {
   if (!expiresAt) return 'EXPIRED'
 
   const today = new Date()
@@ -40,7 +40,7 @@ export function calculateDocumentStatus(expiresAt) {
  * @param {Array} uploads
  * @returns {{score:number, level:'LOW'|'MEDIUM'|'HIGH', expired:number, risk:number, missing:number}}
  */
-export function calculateRiskScore(requirements, uploads) {
+/**export function calculateRiskScore(requirements, uploads) {
   let score = 0
   let expiredCount = 0
   let riskCount = 0
