@@ -8,6 +8,7 @@ import './ClientsPage.css'
 export default function ClientsPage() {
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [showClientModal, setShowClientModal] = useState(false)
   const [newClientName, setNewClientName] = useState('')
 
@@ -18,18 +19,24 @@ export default function ClientsPage() {
 
   const fetchClients = async () => {
     try {
+      setLoading(true)
+      setError(null)
+
       const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Utente non autenticato')
 
       const { data, error } = await supabase
         .from('corporate_clients')
-        .select('*')
+        .select('id, name')
         .eq('user_id', user.id)
-        .order('name')
+        .order('name', { ascending: true })
 
       if (error) throw error
+
       setClients(data || [])
-    } catch (error) {
-      console.error('Error fetching clients:', error)
+    } catch (e) {
+      console.error('Error fetching clients:', e)
+      setError(e?.message ?? 'Errore nel caricamento clienti')
       setClients([])
     } finally {
       setLoading(false)
@@ -42,6 +49,8 @@ export default function ClientsPage() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Utente non autenticato')
+
       const { error } = await supabase
         .from('corporate_clients')
         .insert([{ user_id: user.id, name: newClientName.trim() }])
@@ -51,8 +60,8 @@ export default function ClientsPage() {
       setNewClientName('')
       setShowClientModal(false)
       fetchClients()
-    } catch (error) {
-      console.error('Error creating client:', error)
+    } catch (e) {
+      console.error('Error creating client:', e)
       alert('Errore nella creazione del cliente')
     }
   }
@@ -64,6 +73,24 @@ export default function ClientsPage() {
         <div className="dashboard-content">
           <div className="loading-container">
             <div className="loading"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-layout">
+        <DashboardNav />
+        <div className="dashboard-content">
+          <div className="empty-state">
+            <Users size={48} />
+            <p>Errore nel caricamento</p>
+            <span>{error}</span>
+            <button className="btn btn-primary" onClick={fetchClients}>
+              Riprova
+            </button>
           </div>
         </div>
       </div>
@@ -121,10 +148,16 @@ export default function ClientsPage() {
                     placeholder="es. Enel Energia S.p.A."
                   />
                 </div>
+
                 <div className="modal-actions">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowClientModal(false)}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowClientModal(false)}
+                  >
                     Annulla
                   </button>
+
                   <button type="submit" className="btn btn-primary">
                     Crea Cliente
                   </button>
