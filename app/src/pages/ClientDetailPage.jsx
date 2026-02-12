@@ -1,3 +1,4 @@
+```jsx
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
@@ -14,8 +15,9 @@ import './ClientDetailPage.css'
 
 // --- UI helpers (no lib imports) ---
 const getRiskColor = (level) => {
-  if (level === 'HIGH') return '#ef4444'
-  if (level === 'MEDIUM') return '#f59e0b'
+  const lv = String(level || 'LOW').toUpperCase()
+  if (lv === 'HIGH') return '#ef4444'
+  if (lv === 'MEDIUM') return '#f59e0b'
   return '#22c55e'
 }
 
@@ -68,11 +70,7 @@ export default function ClientDetailPage() {
 
   const [client, setClient] = useState(null)
   const [requirements, setRequirements] = useState([])
-
-  // latest status per requirement from DB view
   const [latestRows, setLatestRows] = useState([])
-
-  // risk header from DB view
   const [clientRisk, setClientRisk] = useState(null)
 
   const [loading, setLoading] = useState(true)
@@ -81,70 +79,82 @@ export default function ClientDetailPage() {
   const [uploadForm, setUploadForm] = useState({ filename: '', expires_at: '' })
 
   useEffect(() => {
-    fetchClientData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let alive = true
+
+    const fetchClientData = async () => {
+      try {
+        setLoading(true)
+
+        // 1) client
+        const { data: clientData, error: clientErr } = await supabase
+          .from('corporate_clients')
+          .select('*')
+          .eq('id', id)
+          .single()
+
+        if (!alive) return
+        if (clientErr) throw clientErr
+        setClient(clientData)
+
+        // 2) requirements + doc types (serve per “Carica/Aggiorna Documento”)
+        const { data: reqData, error: reqErr } = await supabase
+          .from('client_requirements')
+          .select(`*, document_types (*)`)
+          .eq('corporate_client_id', id)
+
+        if (!alive) return
+        if (reqErr) throw reqErr
+        setRequirements(reqData || [])
+
+        // 3) risk header from v_client_risk (single row)
+        const { data: riskRow, error: riskErr } = await supabase
+          .from('v_client_risk')
+          .select(
+            'corporate_client_id, client_name, risk_score, effective_risk, expired_count, risk_count, missing_count'
+          )
+          .eq('corporate_client_id', id)
+          .maybeSingle()
+
+        if (!alive) return
+        if (riskErr) {
+          setClientRisk(null)
+        } else {
+          setClientRisk(riskRow || null)
+        }
+
+        // 4) latest status rows from v_requirement_latest_status
+        const { data: latest, error: latestErr } = await supabase
+          .from('v_requirement_latest_status')
+          .select('*')
+          .eq('corporate_client_id', id)
+
+        if (!alive) return
+        if (latestErr) {
+          console.error('v_requirement_latest_status read error:', latestErr)
+          setLatestRows([])
+        } else {
+          setLatestRows(latest || [])
+        }
+      } catch (error) {
+        if (!alive) return
+        console.error('Error fetching client data:', error)
+        setClient(null)
+        setRequirements([])
+        setLatestRows([])
+        setClientRisk(null)
+      } finally {
+        if (!alive) return
+        setLoading(false)
+      }
+    }
+
+    if (id) fetchClientData()
+
+    return () => {
+      alive = false
+    }
   }, [id])
 
-  const fetchClientData = async () => {
-    try {
-      setLoading(true)
-
-      // 1) client
-      const { data: clientData, error: clientErr } = await supabase
-        .from('corporate_clients')
-        .select('*')
-        .eq('id', id)
-        .single()
-      if (clientErr) throw clientErr
-      setClient(clientData)
-
-      // 2) requirements + doc types (serve per “Carica/Aggiorna Documento”)
-      const { data: reqData, error: reqErr } = await supabase
-        .from('client_requirements')
-        .select(`*, document_types (*)`)
-        .eq('corporate_client_id', id)
-      if (reqErr) throw reqErr
-      setRequirements(reqData || [])
-
-      // 3) risk header from v_client_risk (single row)
-      const { data: riskRows, error: riskErr } = await supabase
-        .from('v_client_risk')
-        .select('corporate_client_id, client_name, risk_score, effective_risk, expired_count, risk_count, missing_count')
-        .eq('corporate_client_id', id)
-        .limit(1)
-      if (!riskErr && riskRows && riskRows.length > 0) {
-        setClientRisk(riskRows[0])
-      } else {
-        setClientRisk(null)
-      }
-
-      // 4) latest status rows from v_requirement_latest_status
-      // NOTE: se la view NON ha corporate_client_id o document_type_id, ti esplode.
-      // In quel caso mi mandi la struttura colonne e lo adatto.
-      const { data: latest, error: latestErr } = await supabase
-        .from('v_requirement_latest_status')
-        .select('*')
-        .eq('corporate_client_id', id)
-
-      if (latestErr) {
-        // fallback: niente blocchi UI, ma lo segnaliamo in console
-        console.error('v_requirement_latest_status read error:', latestErr)
-        setLatestRows([])
-      } else {
-        setLatestRows(latest || [])
-      }
-    } catch (error) {
-      console.error('Error fetching client data:', error)
-      setClient(null)
-      setRequirements([])
-      setLatestRows([])
-      setClientRisk(null)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Map latest rows by document_type_id (best case) OR by document_name (fallback)
   const latestByDocTypeId = useMemo(() => {
     const m = new Map()
     for (const r of latestRows || []) {
@@ -157,6 +167,7 @@ export default function ClientDetailPage() {
     const m = new Map()
     for (const r of latestRows || []) {
       if (r.document_name) m.set(String(r.document_name).toLowerCase(), r)
+      if (r.document_type_name) m.set(String(r.document_type_name).toLowerCase(), r)
     }
     return m
   }, [latestRows])
@@ -167,7 +178,6 @@ export default function ClientDetailPage() {
       return { status: 'MISSING', message: 'Documento non configurato', bestUpload: null }
     }
 
-    // Prefer match by document_type_id, else by name
     const row =
       (dt.id && latestByDocTypeId.get(dt.id)) ||
       (dt.name && latestByDocName.get(String(dt.name).toLowerCase()))
@@ -178,7 +188,6 @@ export default function ClientDetailPage() {
 
     const status = row.status || 'MISSING'
 
-    // message from days_delta if present
     let message = ''
     if (status === 'MISSING') message = 'Nessun documento caricato'
     else if (status === 'EXPIRED') {
@@ -205,6 +214,7 @@ export default function ClientDetailPage() {
 
   const openUploadModal = (docType) => {
     setSelectedDocType(docType)
+    setUploadForm({ filename: '', expires_at: '' })
     setShowUploadModal(true)
   }
 
@@ -217,7 +227,7 @@ export default function ClientDetailPage() {
         corporate_client_id: id,
         document_type_id: selectedDocType.id,
         filename: uploadForm.filename,
-        file_url: '#', // MVP mock
+        file_url: '#',
         expires_at: uploadForm.expires_at,
         status: calcStatusFromDate(uploadForm.expires_at)
       }
@@ -228,10 +238,29 @@ export default function ClientDetailPage() {
       setUploadForm({ filename: '', expires_at: '' })
       setShowUploadModal(false)
       setSelectedDocType(null)
-      fetchClientData()
+
+      // refresh view-backed data
+      setLoading(true)
+
+      const { data: riskRow } = await supabase
+        .from('v_client_risk')
+        .select(
+          'corporate_client_id, client_name, risk_score, effective_risk, expired_count, risk_count, missing_count'
+        )
+        .eq('corporate_client_id', id)
+        .maybeSingle()
+
+      const { data: latest } = await supabase
+        .from('v_requirement_latest_status')
+        .select('*')
+        .eq('corporate_client_id', id)
+
+      setClientRisk(riskRow || null)
+      setLatestRows(latest || [])
     } catch (error) {
       console.error('Error uploading document:', error)
-      alert('Errore nel caricamento del documento')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -264,7 +293,7 @@ export default function ClientDetailPage() {
     )
   }
 
-  const effectiveLevel = clientRisk?.effective_risk || 'LOW'
+  const effectiveLevel = String(clientRisk?.effective_risk || 'LOW').toUpperCase()
   const riskScore = clientRisk?.risk_score ?? 0
   const expiredCount = clientRisk?.expired_count ?? 0
   const riskCount = clientRisk?.risk_count ?? 0
@@ -333,7 +362,10 @@ export default function ClientDetailPage() {
                 >
                   <div className="requirement-header">
                     <div className="requirement-title">
-                      <div className="status-icon" style={{ color: getStatusColor(reqStatus.status) }}>
+                      <div
+                        className="status-icon"
+                        style={{ color: getStatusColor(reqStatus.status) }}
+                      >
                         {getStatusIcon(reqStatus.status)}
                       </div>
                       <div>
@@ -373,7 +405,9 @@ export default function ClientDetailPage() {
                             <div className="info-row">
                               <span className="info-label">Caricato il:</span>
                               <span className="info-value">
-                                {new Date(reqStatus.bestUpload.uploaded_at).toLocaleDateString('it-IT')}
+                                {new Date(reqStatus.bestUpload.uploaded_at).toLocaleDateString(
+                                  'it-IT'
+                                )}
                               </span>
                             </div>
                           )}
@@ -383,9 +417,14 @@ export default function ClientDetailPage() {
                               <span className="info-label">Scadenza:</span>
                               <span
                                 className="info-value"
-                                style={{ fontWeight: 600, color: getStatusColor(reqStatus.status) }}
+                                style={{
+                                  fontWeight: 600,
+                                  color: getStatusColor(reqStatus.status)
+                                }}
                               >
-                                {new Date(reqStatus.bestUpload.expires_at).toLocaleDateString('it-IT')}
+                                {new Date(reqStatus.bestUpload.expires_at).toLocaleDateString(
+                                  'it-IT'
+                                )}
                               </span>
                             </div>
                           )}
@@ -398,7 +437,9 @@ export default function ClientDetailPage() {
                       onClick={() => openUploadModal(req.document_types)}
                     >
                       <Upload size={16} />
-                      {reqStatus.status === 'MISSING' ? 'Carica Documento' : 'Aggiorna Documento'}
+                      {reqStatus.status === 'MISSING'
+                        ? 'Carica Documento'
+                        : 'Aggiorna Documento'}
                     </button>
                   </div>
                 </div>
@@ -418,7 +459,9 @@ export default function ClientDetailPage() {
                   <input
                     type="text"
                     value={uploadForm.filename}
-                    onChange={(e) => setUploadForm({ ...uploadForm, filename: e.target.value })}
+                    onChange={(e) =>
+                      setUploadForm({ ...uploadForm, filename: e.target.value })
+                    }
                     required
                     placeholder="es. durc_2025.pdf"
                   />
@@ -430,13 +473,19 @@ export default function ClientDetailPage() {
                   <input
                     type="date"
                     value={uploadForm.expires_at}
-                    onChange={(e) => setUploadForm({ ...uploadForm, expires_at: e.target.value })}
+                    onChange={(e) =>
+                      setUploadForm({ ...uploadForm, expires_at: e.target.value })
+                    }
                     required
                   />
                 </div>
 
                 <div className="modal-actions">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowUploadModal(false)}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowUploadModal(false)}
+                  >
                     Annulla
                   </button>
                   <button type="submit" className="btn btn-primary">
@@ -451,3 +500,4 @@ export default function ClientDetailPage() {
     </div>
   )
 }
+```
