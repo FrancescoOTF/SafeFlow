@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -6,31 +6,79 @@ import {
   CheckCircle,
   AlertCircle,
   XCircle,
-  FileQuestion,
+  FileQuestion
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import {
-  calculateDocumentStatus,
-  getStatusColor,
-  calculateRiskScore,
-  getRiskLevelColor,
-} from '../lib/riskCalculator'
-import { getEffectiveRiskLevel } from '../lib/riskUtils'
 import DashboardNav from '../components/DashboardNav'
 import './ClientDetailPage.css'
 
+// --- UI helpers (no lib imports) ---
+const getRiskColor = (level) => {
+  if (level === 'HIGH') return '#ef4444'
+  if (level === 'MEDIUM') return '#f59e0b'
+  return '#22c55e'
+}
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'OK':
+      return '#22c55e'
+    case 'RISK':
+      return '#f59e0b'
+    case 'EXPIRED':
+      return '#ef4444'
+    case 'MISSING':
+      return '#94a3b8'
+    default:
+      return '#94a3b8'
+  }
+}
+
+const getStatusIcon = (status) => {
+  switch (status) {
+    case 'OK':
+      return <CheckCircle size={20} />
+    case 'RISK':
+      return <AlertCircle size={20} />
+    case 'EXPIRED':
+      return <XCircle size={20} />
+    case 'MISSING':
+      return <FileQuestion size={20} />
+    default:
+      return null
+  }
+}
+
+// used ONLY when inserting a new upload
+const calcStatusFromDate = (expires_at) => {
+  if (!expires_at) return 'MISSING'
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const exp = new Date(expires_at)
+  exp.setHours(0, 0, 0, 0)
+
+  if (exp < today) return 'EXPIRED'
+  const diffDays = Math.ceil((exp - today) / (1000 * 60 * 60 * 24))
+  if (diffDays <= 30) return 'RISK'
+  return 'OK'
+}
+
 export default function ClientDetailPage() {
   const { id } = useParams()
+
   const [client, setClient] = useState(null)
   const [requirements, setRequirements] = useState([])
-  const [uploads, setUploads] = useState([])
+
+  // latest status per requirement from DB view
+  const [latestRows, setLatestRows] = useState([])
+
+  // risk header from DB view
+  const [clientRisk, setClientRisk] = useState(null)
+
   const [loading, setLoading] = useState(true)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [selectedDocType, setSelectedDocType] = useState(null)
-  const [uploadForm, setUploadForm] = useState({
-    filename: '',
-    expires_at: '',
-  })
+  const [uploadForm, setUploadForm] = useState({ filename: '', expires_at: '' })
 
   useEffect(() => {
     fetchClientData()
@@ -39,46 +87,125 @@ export default function ClientDetailPage() {
 
   const fetchClientData = async () => {
     try {
-      // Client
+      setLoading(true)
+
+      // 1) client
       const { data: clientData, error: clientErr } = await supabase
         .from('corporate_clients')
         .select('*')
         .eq('id', id)
         .single()
-
       if (clientErr) throw clientErr
       setClient(clientData)
 
-      // Requirements + doc types
+      // 2) requirements + doc types (serve per “Carica/Aggiorna Documento”)
       const { data: reqData, error: reqErr } = await supabase
         .from('client_requirements')
-        .select(
-          `
-          *,
-          document_types (*)
-        `
-        )
+        .select(`*, document_types (*)`)
         .eq('corporate_client_id', id)
-
       if (reqErr) throw reqErr
       setRequirements(reqData || [])
 
-      // Uploads
-      const { data: uploadsData, error: upErr } = await supabase
-        .from('document_uploads')
+      // 3) risk header from v_client_risk (single row)
+      const { data: riskRows, error: riskErr } = await supabase
+        .from('v_client_risk')
+        .select('corporate_client_id, client_name, risk_score, effective_risk, expired_count, risk_count, missing_count')
+        .eq('corporate_client_id', id)
+        .limit(1)
+      if (!riskErr && riskRows && riskRows.length > 0) {
+        setClientRisk(riskRows[0])
+      } else {
+        setClientRisk(null)
+      }
+
+      // 4) latest status rows from v_requirement_latest_status
+      // NOTE: se la view NON ha corporate_client_id o document_type_id, ti esplode.
+      // In quel caso mi mandi la struttura colonne e lo adatto.
+      const { data: latest, error: latestErr } = await supabase
+        .from('v_requirement_latest_status')
         .select('*')
         .eq('corporate_client_id', id)
 
-      if (upErr) throw upErr
-      setUploads(uploadsData || [])
+      if (latestErr) {
+        // fallback: niente blocchi UI, ma lo segnaliamo in console
+        console.error('v_requirement_latest_status read error:', latestErr)
+        setLatestRows([])
+      } else {
+        setLatestRows(latest || [])
+      }
     } catch (error) {
       console.error('Error fetching client data:', error)
       setClient(null)
       setRequirements([])
-      setUploads([])
+      setLatestRows([])
+      setClientRisk(null)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Map latest rows by document_type_id (best case) OR by document_name (fallback)
+  const latestByDocTypeId = useMemo(() => {
+    const m = new Map()
+    for (const r of latestRows || []) {
+      if (r.document_type_id) m.set(r.document_type_id, r)
+    }
+    return m
+  }, [latestRows])
+
+  const latestByDocName = useMemo(() => {
+    const m = new Map()
+    for (const r of latestRows || []) {
+      if (r.document_name) m.set(String(r.document_name).toLowerCase(), r)
+    }
+    return m
+  }, [latestRows])
+
+  const getRequirementStatus = (req) => {
+    const dt = req.document_types
+    if (!dt) {
+      return { status: 'MISSING', message: 'Documento non configurato', bestUpload: null }
+    }
+
+    // Prefer match by document_type_id, else by name
+    const row =
+      (dt.id && latestByDocTypeId.get(dt.id)) ||
+      (dt.name && latestByDocName.get(String(dt.name).toLowerCase()))
+
+    if (!row) {
+      return { status: 'MISSING', message: 'Nessun documento caricato', bestUpload: null }
+    }
+
+    const status = row.status || 'MISSING'
+
+    // message from days_delta if present
+    let message = ''
+    if (status === 'MISSING') message = 'Nessun documento caricato'
+    else if (status === 'EXPIRED') {
+      if (row.days_delta != null) message = `Scaduto da ${Math.abs(row.days_delta)} giorni`
+      else message = 'Scaduto'
+    } else if (status === 'RISK') {
+      if (row.days_delta != null) message = `Scade tra ${row.days_delta} giorni`
+      else message = 'In scadenza'
+    } else {
+      if (row.expires_at) message = `Valido fino al ${new Date(row.expires_at).toLocaleDateString('it-IT')}`
+      else message = 'Valido'
+    }
+
+    const bestUpload = row.filename
+      ? {
+          filename: row.filename,
+          uploaded_at: row.uploaded_at,
+          expires_at: row.expires_at
+        }
+      : null
+
+    return { status, message, bestUpload }
+  }
+
+  const openUploadModal = (docType) => {
+    setSelectedDocType(docType)
+    setShowUploadModal(true)
   }
 
   const handleUploadDocument = async (e) => {
@@ -92,7 +219,7 @@ export default function ClientDetailPage() {
         filename: uploadForm.filename,
         file_url: '#', // MVP mock
         expires_at: uploadForm.expires_at,
-        status: calculateDocumentStatus(uploadForm.expires_at),
+        status: calcStatusFromDate(uploadForm.expires_at)
       }
 
       const { error } = await supabase.from('document_uploads').insert([payload])
@@ -106,11 +233,6 @@ export default function ClientDetailPage() {
       console.error('Error uploading document:', error)
       alert('Errore nel caricamento del documento')
     }
-  }
-
-  const openUploadModal = (docType) => {
-    setSelectedDocType(docType)
-    setShowUploadModal(true)
   }
 
   if (loading) {
@@ -142,68 +264,12 @@ export default function ClientDetailPage() {
     )
   }
 
-  const risk = calculateRiskScore(requirements, uploads)
-  const effectiveLevel = getEffectiveRiskLevel({
-    expired: risk.expired,
-    risk: risk.risk,
-    missing: risk.missing,
-  })
-
-  const getRequirementStatus = (requirement) => {
-    const relevantUploads = uploads.filter(
-      (u) => u.document_type_id === requirement.document_type_id
-    )
-
-    if (relevantUploads.length === 0) {
-      return {
-        status: 'MISSING',
-        bestUpload: null,
-        message: 'Nessun documento caricato',
-      }
-    }
-
-    // Best upload = farthest expires_at
-    const bestUpload = relevantUploads
-      .slice()
-      .sort((a, b) => new Date(b.expires_at) - new Date(a.expires_at))[0]
-
-    const status = calculateDocumentStatus(bestUpload.expires_at)
-
-    let message = ''
-    if (status === 'EXPIRED') {
-      const expiryDate = new Date(bestUpload.expires_at)
-      const daysAgo = Math.abs(
-        Math.ceil((new Date() - expiryDate) / (1000 * 60 * 60 * 24))
-      )
-      message = `Scaduto da ${daysAgo} giorni`
-    } else if (status === 'RISK') {
-      const expiryDate = new Date(bestUpload.expires_at)
-      const daysLeft = Math.ceil(
-        (expiryDate - new Date()) / (1000 * 60 * 60 * 24)
-      )
-      message = `Scade tra ${daysLeft} giorni`
-    } else {
-      const expiryDate = new Date(bestUpload.expires_at)
-      message = `Valido fino al ${expiryDate.toLocaleDateString('it-IT')}`
-    }
-
-    return { status, bestUpload, message }
-  }
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'OK':
-        return <CheckCircle size={20} />
-      case 'RISK':
-        return <AlertCircle size={20} />
-      case 'EXPIRED':
-        return <XCircle size={20} />
-      case 'MISSING':
-        return <FileQuestion size={20} />
-      default:
-        return null
-    }
-  }
+  const effectiveLevel = clientRisk?.effective_risk || 'LOW'
+  const riskScore = clientRisk?.risk_score ?? 0
+  const expiredCount = clientRisk?.expired_count ?? 0
+  const riskCount = clientRisk?.risk_count ?? 0
+  const missingCount = clientRisk?.missing_count ?? 0
+  const riskColor = getRiskColor(effectiveLevel)
 
   return (
     <div className="dashboard-layout">
@@ -218,37 +284,36 @@ export default function ClientDetailPage() {
 
           <div className="client-title-section">
             <h1>{client.name}</h1>
+
             <div className="client-risk-info">
               <span
                 className="risk-badge-large"
                 style={{
-                  backgroundColor: `${getRiskLevelColor(effectiveLevel)}20`,
-                  color: getRiskLevelColor(effectiveLevel),
-                  border: `2px solid ${getRiskLevelColor(effectiveLevel)}`,
+                  backgroundColor: `${riskColor}20`,
+                  color: riskColor,
+                  border: `2px solid ${riskColor}`
                 }}
               >
                 {effectiveLevel} RISK
               </span>
-              <span
-                className="risk-score-large"
-                style={{ color: getRiskLevelColor(effectiveLevel) }}
-              >
-                Score: {risk.score}
+
+              <span className="risk-score-large" style={{ color: riskColor }}>
+                Score: {riskScore}
               </span>
             </div>
           </div>
 
           <div className="risk-breakdown">
             <div className="risk-stat">
-              <span className="risk-stat-value expired">{risk.expired}</span>
+              <span className="risk-stat-value expired">{expiredCount}</span>
               <span className="risk-stat-label">Scaduti</span>
             </div>
             <div className="risk-stat">
-              <span className="risk-stat-value risk">{risk.risk}</span>
+              <span className="risk-stat-value risk">{riskCount}</span>
               <span className="risk-stat-label">In Scadenza</span>
             </div>
             <div className="risk-stat">
-              <span className="risk-stat-value missing">{risk.missing}</span>
+              <span className="risk-stat-value missing">{missingCount}</span>
               <span className="risk-stat-label">Mancanti</span>
             </div>
           </div>
@@ -264,22 +329,17 @@ export default function ClientDetailPage() {
               return (
                 <div
                   key={req.id}
-                  className={`requirement-card status-${reqStatus.status.toLowerCase()}`}
+                  className={`requirement-card status-${String(reqStatus.status).toLowerCase()}`}
                 >
                   <div className="requirement-header">
                     <div className="requirement-title">
-                      <div
-                        className="status-icon"
-                        style={{ color: getStatusColor(reqStatus.status) }}
-                      >
+                      <div className="status-icon" style={{ color: getStatusColor(reqStatus.status) }}>
                         {getStatusIcon(reqStatus.status)}
                       </div>
                       <div>
                         <h3>{req.document_types?.name}</h3>
                         {req.document_types?.description && (
-                          <p className="doc-description">
-                            {req.document_types.description}
-                          </p>
+                          <p className="doc-description">{req.document_types.description}</p>
                         )}
                       </div>
                     </div>
@@ -288,7 +348,7 @@ export default function ClientDetailPage() {
                       className="status-badge"
                       style={{
                         backgroundColor: `${getStatusColor(reqStatus.status)}20`,
-                        color: getStatusColor(reqStatus.status),
+                        color: getStatusColor(reqStatus.status)
                       }}
                     >
                       {reqStatus.status}
@@ -306,32 +366,29 @@ export default function ClientDetailPage() {
                         <>
                           <div className="info-row">
                             <span className="info-label">File:</span>
-                            <span className="info-value">
-                              {reqStatus.bestUpload.filename}
-                            </span>
+                            <span className="info-value">{reqStatus.bestUpload.filename}</span>
                           </div>
-                          <div className="info-row">
-                            <span className="info-label">Caricato il:</span>
-                            <span className="info-value">
-                              {new Date(reqStatus.bestUpload.uploaded_at).toLocaleDateString(
-                                'it-IT'
-                              )}
-                            </span>
-                          </div>
-                          <div className="info-row">
-                            <span className="info-label">Scadenza:</span>
-                            <span
-                              className="info-value"
-                              style={{
-                                fontWeight: 600,
-                                color: getStatusColor(reqStatus.status),
-                              }}
-                            >
-                              {new Date(reqStatus.bestUpload.expires_at).toLocaleDateString(
-                                'it-IT'
-                              )}
-                            </span>
-                          </div>
+
+                          {reqStatus.bestUpload.uploaded_at && (
+                            <div className="info-row">
+                              <span className="info-label">Caricato il:</span>
+                              <span className="info-value">
+                                {new Date(reqStatus.bestUpload.uploaded_at).toLocaleDateString('it-IT')}
+                              </span>
+                            </div>
+                          )}
+
+                          {reqStatus.bestUpload.expires_at && (
+                            <div className="info-row">
+                              <span className="info-label">Scadenza:</span>
+                              <span
+                                className="info-value"
+                                style={{ fontWeight: 600, color: getStatusColor(reqStatus.status) }}
+                              >
+                                {new Date(reqStatus.bestUpload.expires_at).toLocaleDateString('it-IT')}
+                              </span>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
@@ -341,9 +398,7 @@ export default function ClientDetailPage() {
                       onClick={() => openUploadModal(req.document_types)}
                     >
                       <Upload size={16} />
-                      {reqStatus.status === 'MISSING'
-                        ? 'Carica Documento'
-                        : 'Aggiorna Documento'}
+                      {reqStatus.status === 'MISSING' ? 'Carica Documento' : 'Aggiorna Documento'}
                     </button>
                   </div>
                 </div>
@@ -353,43 +408,35 @@ export default function ClientDetailPage() {
         </div>
 
         {showUploadModal && (
-          <div
-            className="modal-overlay"
-            onClick={() => setShowUploadModal(false)}
-          >
+          <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <h3>Carica {selectedDocType?.name}</h3>
+
               <form onSubmit={handleUploadDocument}>
                 <div className="form-group">
                   <label>Nome File *</label>
                   <input
                     type="text"
                     value={uploadForm.filename}
-                    onChange={(e) =>
-                      setUploadForm({ ...uploadForm, filename: e.target.value })
-                    }
+                    onChange={(e) => setUploadForm({ ...uploadForm, filename: e.target.value })}
                     required
                     placeholder="es. durc_2025.pdf"
                   />
                   <small>In produzione qui ci sarà l'upload file reale</small>
                 </div>
+
                 <div className="form-group">
                   <label>Data Scadenza *</label>
                   <input
                     type="date"
                     value={uploadForm.expires_at}
-                    onChange={(e) =>
-                      setUploadForm({ ...uploadForm, expires_at: e.target.value })
-                    }
+                    onChange={(e) => setUploadForm({ ...uploadForm, expires_at: e.target.value })}
                     required
                   />
                 </div>
+
                 <div className="modal-actions">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setShowUploadModal(false)}
-                  >
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowUploadModal(false)}>
                     Annulla
                   </button>
                   <button type="submit" className="btn btn-primary">
