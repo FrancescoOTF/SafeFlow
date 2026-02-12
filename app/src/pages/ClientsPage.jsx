@@ -166,7 +166,7 @@ export default function ClientsPage() {
         <div className="clients-header">
           <div>
             <h1>Clienti Corporate</h1>
-            <p>Elenco clienti (sorgente: v_client_risk). Clicca per vedere la checklist documentale.</p>
+            <p>Elenco clienti. Clicca per vedere la checklist documentale.</p>
           </div>
 
           <button className="btn btn-primary" onClick={() => setShowClientModal(true)}>
