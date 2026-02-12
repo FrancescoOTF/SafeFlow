@@ -1,4 +1,3 @@
-```jsx
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
@@ -96,7 +95,8 @@ export default function ClientDetailPage() {
         if (clientErr) throw clientErr
         setClient(clientData)
 
-        // 2) requirements + doc types (serve per “Carica/Aggiorna Documento”)
+        // 2) requirements + doc types
+        // IMPORTANT: backticks here avoid any parsing issues
         const { data: reqData, error: reqErr } = await supabase
           .from('client_requirements')
           .select(`*, document_types (*)`)
@@ -106,7 +106,7 @@ export default function ClientDetailPage() {
         if (reqErr) throw reqErr
         setRequirements(reqData || [])
 
-        // 3) risk header from v_client_risk (single row)
+        // 3) risk header from v_client_risk
         const { data: riskRow, error: riskErr } = await supabase
           .from('v_client_risk')
           .select(
@@ -116,11 +116,8 @@ export default function ClientDetailPage() {
           .maybeSingle()
 
         if (!alive) return
-        if (riskErr) {
-          setClientRisk(null)
-        } else {
-          setClientRisk(riskRow || null)
-        }
+        if (riskErr) setClientRisk(null)
+        else setClientRisk(riskRow || null)
 
         // 4) latest status rows from v_requirement_latest_status
         const { data: latest, error: latestErr } = await supabase
@@ -239,7 +236,6 @@ export default function ClientDetailPage() {
       setShowUploadModal(false)
       setSelectedDocType(null)
 
-      // refresh view-backed data
       setLoading(true)
 
       const { data: riskRow } = await supabase
@@ -500,4 +496,3 @@ export default function ClientDetailPage() {
     </div>
   )
 }
-```
