@@ -11,8 +11,51 @@ export default function DashboardPage() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    let alive = true
+
+    const fetchClientsRisk = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const { data, error } = await supabase
+          .from('v_client_risk')
+          .select(
+            'corporate_client_id, client_name, effective_risk, risk_score, expired_count, risk_count, missing_count'
+          )
+          .order('risk_score', { ascending: false })
+          .order('client_name', { ascending: true })
+
+        if (!alive) return
+        if (error) throw error
+
+        const mapped = (data || []).map((r) => ({
+          client_id: r.corporate_client_id,
+          name: r.client_name,
+          level: String(r.effective_risk || 'LOW').toUpperCase(),
+          score: r.risk_score ?? 0,
+          expired: r.expired_count ?? 0,
+          risk: r.risk_count ?? 0,
+          missing: r.missing_count ?? 0
+        }))
+
+        setClients(mapped)
+      } catch (e) {
+        if (!alive) return
+        console.error('Error fetching clients risk:', e)
+        setError(e?.message ?? String(e))
+        setClients([])
+      } finally {
+        if (!alive) return
+        setLoading(false)
+      }
+    }
+
     fetchClientsRisk()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    return () => {
+      alive = false
+    }
   }, [])
 
   const fetchClientsRisk = async () => {
@@ -20,7 +63,6 @@ export default function DashboardPage() {
       setLoading(true)
       setError(null)
 
-      // Single source of truth: DB view
       const { data, error } = await supabase
         .from('v_client_risk')
         .select(
@@ -31,12 +73,11 @@ export default function DashboardPage() {
 
       if (error) throw error
 
-      // Normalize shape for existing UI
       const mapped = (data || []).map((r) => ({
         client_id: r.corporate_client_id,
         name: r.client_name,
-        level: r.effective_risk,
-        score: r.risk_score,
+        level: String(r.effective_risk || 'LOW').toUpperCase(),
+        score: r.risk_score ?? 0,
         expired: r.expired_count ?? 0,
         risk: r.risk_count ?? 0,
         missing: r.missing_count ?? 0
@@ -53,16 +94,17 @@ export default function DashboardPage() {
   }
 
   const getCtaClass = (level) => {
-    if (level === 'HIGH') return 'btn btn-danger btn-sm'
-    if (level === 'MEDIUM') return 'btn btn-warning btn-sm'
+    const lv = String(level || 'LOW').toUpperCase()
+    if (lv === 'HIGH') return 'btn btn-danger btn-sm'
+    if (lv === 'MEDIUM') return 'btn btn-warning btn-sm'
     return 'btn btn-secondary btn-sm'
   }
 
-  // No more frontend risk logic: level comes from DB
   const getRiskColor = (level) => {
-    if (level === 'HIGH') return '#ef4444'   // red
-    if (level === 'MEDIUM') return '#f59e0b' // amber
-    return '#22c55e'                         // green
+    const lv = String(level || 'LOW').toUpperCase()
+    if (lv === 'HIGH') return '#ef4444'
+    if (lv === 'MEDIUM') return '#f59e0b'
+    return '#22c55e'
   }
 
   const getTopReason = (client) => {
