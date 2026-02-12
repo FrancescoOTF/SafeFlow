@@ -58,41 +58,6 @@ export default function DashboardPage() {
     }
   }, [])
 
-  const fetchClientsRisk = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const { data, error } = await supabase
-        .from('v_client_risk')
-        .select(
-          'corporate_client_id, client_name, effective_risk, risk_score, expired_count, risk_count, missing_count'
-        )
-        .order('risk_score', { ascending: false })
-        .order('client_name', { ascending: true })
-
-      if (error) throw error
-
-      const mapped = (data || []).map((r) => ({
-        client_id: r.corporate_client_id,
-        name: r.client_name,
-        level: String(r.effective_risk || 'LOW').toUpperCase(),
-        score: r.risk_score ?? 0,
-        expired: r.expired_count ?? 0,
-        risk: r.risk_count ?? 0,
-        missing: r.missing_count ?? 0
-      }))
-
-      setClients(mapped)
-    } catch (e) {
-      console.error('Error fetching clients risk:', e)
-      setError(e?.message ?? String(e))
-      setClients([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const getCtaClass = (level) => {
     const lv = String(level || 'LOW').toUpperCase()
     if (lv === 'HIGH') return 'btn btn-danger btn-sm'
@@ -140,9 +105,6 @@ export default function DashboardPage() {
             <AlertTriangle size={48} />
             <p>Errore nel caricamento dei dati</p>
             <span>{error}</span>
-            <button className="btn btn-primary" onClick={fetchClientsRisk}>
-              Riprova
-            </button>
           </div>
         </div>
       </div>
@@ -213,118 +175,68 @@ export default function DashboardPage() {
         <div className="risk-table-container">
           <h2>Clienti Corporate - Ordinamento per Rischio</h2>
 
-          {clients.length === 0 ? (
-            <div className="empty-state">
-              <AlertTriangle size={48} />
-              <p>Nessun cliente corporate</p>
-              <Link to="/clients" className="btn btn-primary">
-                Aggiungi Cliente
-              </Link>
-            </div>
-          ) : (
-            <div className="risk-table-scroll">
-              <table className="risk-table">
-                <colgroup>
-                  <col style={{ width: '26%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '10%' }} />
-                  <col style={{ width: '10%' }} />
-                  <col style={{ width: '10%' }} />
-                  <col style={{ width: '10%' }} />
-                  <col style={{ width: '10%' }} />
-                </colgroup>
+          <div className="risk-table-scroll">
+            <table className="risk-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Risk Level</th>
+                  <th>Motivo</th>
+                  <th>Risk Score</th>
+                  <th>Scaduti</th>
+                  <th>In Scadenza</th>
+                  <th>Mancanti</th>
+                  <th>Azioni</th>
+                </tr>
+              </thead>
 
-                <thead>
-                  <tr>
-                    <th>Cliente</th>
-                    <th>Risk Level</th>
-                    <th>Motivo</th>
-                    <th>Risk Score</th>
-                    <th className="text-center">Scaduti</th>
-                    <th className="text-center">In Scadenza</th>
-                    <th className="text-center">Mancanti</th>
-                    <th>Azioni</th>
-                  </tr>
-                </thead>
+              <tbody>
+                {clients.map((client) => {
+                  const level = client.level
+                  const color = getRiskColor(level)
+                  const reason = getTopReason(client)
 
-                <tbody>
-                  {clients.map((client) => {
-                    const level = client.level
-                    const color = getRiskColor(level)
-                    const reason = getTopReason(client)
+                  return (
+                    <tr
+                      key={client.client_id}
+                      className={`risk-row risk-${String(level).toLowerCase()}`}
+                    >
+                      <td className="client-name">
+                        <strong>{client.name}</strong>
+                      </td>
 
-                    return (
-                      <tr
-                        key={client.client_id}
-                        className={`risk-row risk-${String(level).toLowerCase()}`}
-                      >
-                        <td className="client-name">
-                          <strong>{client.name}</strong>
-                        </td>
+                      <td>
+                        <span className="risk-badge" style={{ color }}>
+                          {level}
+                        </span>
+                      </td>
 
-                        <td>
-                          <span
-                            className="risk-badge"
-                            style={{
-                              backgroundColor: `${color}20`,
-                              color,
-                              border: 'none'
-                            }}
-                          >
-                            {level}
-                          </span>
-                        </td>
+                      <td>{reason}</td>
 
-                        <td>
-                          <span className="risk-reason">{reason}</span>
-                        </td>
+                      <td>
+                        <span style={{ color, fontWeight: 600 }}>
+                          {client.score}
+                        </span>
+                      </td>
 
-                        <td>
-                          <span className="risk-score" style={{ color }}>
-                            {client.score}
-                          </span>
-                        </td>
+                      <td>{client.expired}</td>
+                      <td>{client.risk}</td>
+                      <td>{client.missing}</td>
 
-                        <td className="text-center">
-                          {client.expired > 0 ? (
-                            <span className="count-badge expired">{client.expired}</span>
-                          ) : (
-                            <span className="count-badge ok">0</span>
-                          )}
-                        </td>
-
-                        <td className="text-center">
-                          {client.risk > 0 ? (
-                            <span className="count-badge risk">{client.risk}</span>
-                          ) : (
-                            <span className="count-badge ok">0</span>
-                          )}
-                        </td>
-
-                        <td className="text-center">
-                          {client.missing > 0 ? (
-                            <span className="count-badge missing">{client.missing}</span>
-                          ) : (
-                            <span className="count-badge ok">0</span>
-                          )}
-                        </td>
-
-                        <td>
-                          <Link
-                            to={`/clients/${client.client_id}`}
-                            className={getCtaClass(level)}
-                          >
-                            Vedi Dettaglio
-                          </Link>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+                      <td>
+                        <Link
+                          to={`/clients/${client.client_id}`}
+                          className={getCtaClass(level)}
+                        >
+                          Vedi Dettaglio
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
