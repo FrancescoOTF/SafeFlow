@@ -1,284 +1,244 @@
-.dashboard-layout {
-  display: flex;
-  min-height: 100vh;
-  background-color: var(--color-bg);
-}
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { AlertTriangle, TrendingUp, FileX, AlertCircle } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import DashboardNav from '../components/DashboardNav'
+import './DashboardPage.css'
 
-.dashboard-content {
-  flex: 1;
-  margin-left: 250px;
-  padding: var(--spacing-2xl);
-  overflow-y: auto;
-}
+export default function DashboardPage() {
+  const [clients, setClients] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-.dashboard-header {
-  margin-bottom: var(--spacing-2xl);
-}
+  useEffect(() => {
+    let alive = true
 
-.dashboard-header h1 {
-  margin-bottom: var(--spacing-sm);
-}
+    const fetchClientsRisk = async () => {
+      try {
+        setLoading(true)
+        setError(null)
 
-.dashboard-header p {
-  color: var(--color-text-muted);
-  margin: 0;
-}
+        const { data, error } = await supabase
+          .from('v_client_risk')
+          .select(
+            'corporate_client_id, client_name, effective_risk, risk_score, expired_count, risk_count, missing_count'
+          )
+          .order('risk_score', { ascending: false })
+          .order('client_name', { ascending: true })
 
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 400px;
-}
+        if (!alive) return
+        if (error) throw error
 
-/* =======================
-   STATS GRID
-======================= */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-2xl);
-}
+        const mapped = (data || []).map((r) => ({
+          client_id: r.corporate_client_id,
+          name: r.client_name,
+          level: String(r.effective_risk || 'LOW').toUpperCase(),
+          score: r.risk_score ?? 0,
+          expired: r.expired_count ?? 0,
+          risk: r.risk_count ?? 0,
+          missing: r.missing_count ?? 0
+        }))
 
-.stat-card {
-  background-color: var(--color-bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-xl);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-lg);
-  transition: all 0.2s ease;
-}
+        setClients(mapped)
+      } catch (e) {
+        if (!alive) return
+        console.error('Error fetching clients risk:', e)
+        setError(e?.message ?? String(e))
+        setClients([])
+      } finally {
+        if (!alive) return
+        setLoading(false)
+      }
+    }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: var(--shadow-md);
-}
+    fetchClientsRisk()
 
-.stat-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
+    return () => {
+      alive = false
+    }
+  }, [])
 
-.stat-icon.clients {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #3B82F6;
-}
-
-.stat-icon.ok {
-  background-color: rgba(34, 197, 94, 0.1);
-  color: var(--color-success);
-}
-
-.stat-icon.warning {
-  background-color: rgba(245, 158, 11, 0.1);
-  color: var(--color-warning);
-}
-
-.stat-icon.danger {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: var(--color-danger);
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-}
-
-.stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 0;
-}
-
-/* =======================
-   DASHBOARD SECTIONS
-======================= */
-.dashboard-sections {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: var(--spacing-xl);
-}
-
-.dashboard-section {
-  background-color: var(--color-bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-xl);
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.section-header h2 {
-  font-size: 1.25rem;
-  margin: 0;
-}
-
-/* =======================
-   RISK TABLE
-======================= */
-
-.risk-table {
-  width: 100%;
-  min-width: 980px;
-  border-collapse: separate;
-  border-spacing: 0 12px;
-}
-
-.risk-table thead th {
-  text-align: left;
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  padding: 10px 14px;
-  white-space: nowrap;
-}
-
-/* ===== FIX DEFINITIVO ALLINEAMENTO ===== */
-
-/* niente background sul TR */
-.risk-table tbody tr {
-  position: relative;
-  background: transparent;
-}
-
-/* background sui TD */
-.risk-table tbody td {
-  background-color: var(--color-bg-secondary);
-  padding: 14px 16px;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
-/* angoli e spazio nome */
-.risk-table tbody tr td:first-child {
-  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-  padding-left: 28px;
-  font-weight: 600;
-}
-
-/* angoli e azioni */
-.risk-table tbody tr td:last-child {
-  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-  text-align: right;
-}
-
-
-/* ===== Punto 1️⃣: riduci rumore LOW ===== */
-.risk-low {
-  opacity: 0.65;
-}
-
-.risk-low:hover {
-  opacity: 1;
-}
-
-/* ===== Bottoni ===== */
-.btn.btn-danger {
-  background-color: var(--color-danger);
-  border-color: var(--color-danger);
-}
-
-.btn.btn-warning {
-  background-color: var(--color-warning);
-  border-color: var(--color-warning);
-  color: #000;
-}
-
-/* =======================
-   RESPONSIVE
-======================= */
-@media (max-width: 1024px) {
-  .dashboard-sections {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .dashboard-content {
-    margin-left: 60px;
-    padding: var(--spacing-lg);
+  const getCtaClass = (level) => {
+    const lv = String(level || 'LOW').toUpperCase()
+    if (lv === 'HIGH') return 'btn btn-danger btn-sm'
+    if (lv === 'MEDIUM') return 'btn btn-warning btn-sm'
+    return 'btn btn-secondary btn-sm'
   }
 
-  .risk-table {
-    min-width: 920px;
+  const getRiskColor = (level) => {
+    const lv = String(level || 'LOW').toUpperCase()
+    if (lv === 'HIGH') return '#ef4444'
+    if (lv === 'MEDIUM') return '#f59e0b'
+    return '#22c55e'
   }
 
-  .stats-grid {
-    grid-template-columns: 1fr;
+  const getTopReason = (client) => {
+    const expired = client?.expired ?? 0
+    const missing = client?.missing ?? 0
+    const risk = client?.risk ?? 0
+
+    if (expired > 0) return `${expired} scadut${expired === 1 ? 'o' : 'i'}`
+    if (missing > 0) return `${missing} mancant${missing === 1 ? 'e' : 'i'}`
+    if (risk > 0) return `${risk} in scadenza`
+    return 'OK'
   }
-}
-/* ===== FIX: testo cliente non deve finire sotto l'accent bar ===== */
-.risk-table tbody td:first-child {
-  padding-left: 28px; /* compensazione barra a sinistra */
-}
 
-/* accent bar: resta attaccata al bordo senza entrare nel contenuto */
-.risk-row::before {
-  left: -1px;
-}
+  if (loading) {
+    return (
+      <div className="dashboard-layout">
+        <DashboardNav />
+        <div className="dashboard-content">
+          <div className="loading-container">
+            <div className="loading"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-/* ===== Punto 1: LOW meno rumorosi (ma leggibili) ===== */
-.risk-low {
-  opacity: 0.65;
-}
+  if (error) {
+    return (
+      <div className="dashboard-layout">
+        <DashboardNav />
+        <div className="dashboard-content">
+          <div className="empty-state">
+            <AlertTriangle size={48} />
+            <p>Errore nel caricamento dei dati</p>
+            <span>{error}</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-.risk-low:hover {
-  opacity: 1;
-}
+  const totals = clients.reduce(
+    (acc, client) => ({
+      expired: acc.expired + (client.expired ?? 0),
+      risk: acc.risk + (client.risk ?? 0),
+      missing: acc.missing + (client.missing ?? 0)
+    }),
+    { expired: 0, risk: 0, missing: 0 }
+  )
 
-/* ===== Punto 2: CTA più forte per MEDIUM/HIGH ===== */
-.btn.btn-danger.btn-sm {
-  background-color: var(--color-danger);
-  border-color: var(--color-danger);
-}
+  return (
+    <div className="dashboard-layout">
+      <DashboardNav />
 
-.btn.btn-warning.btn-sm {
-  background-color: var(--color-warning);
-  border-color: var(--color-warning);
-  color: #000;
-}
-/* --- Fix stacking: il testo deve stare SOPRA la barra --- */
-.risk-row { position: relative; }
-.risk-row::before { z-index: 0; }
-.risk-row td { position: relative; z-index: 1; }
+      <div className="dashboard-content">
+        <div className="dashboard-header">
+          <h1>Dashboard Rischio Clienti</h1>
+          <p>Priorità: clienti ordinati per risk score decrescente</p>
+        </div>
 
-/* --- Fix visibilità cliente: padding + colore forzato --- */
-.risk-table tbody td:first-child { padding-left: 28px; }
-.client-name strong { color: var(--color-text); }
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon clients">
+              <TrendingUp size={24} />
+            </div>
+            <div className="stat-info">
+              <p className="stat-label">Clienti Corporate</p>
+              <h3 className="stat-value">{clients.length}</h3>
+            </div>
+          </div>
 
-/* --- Se l’opacità ti uccide i nomi, rendi l’opacità solo “di sfondo” --- */
-/* --- LOW meno rumorosi senza uccidere il nome --- */
-.risk-low td {
-  opacity: 0.75;
-}
+          <div className="stat-card">
+            <div className="stat-icon danger">
+              <FileX size={24} />
+            </div>
+            <div className="stat-info">
+              <p className="stat-label">Documenti Scaduti</p>
+              <h3 className="stat-value">{totals.expired}</h3>
+            </div>
+          </div>
 
-.risk-low td:first-child {
-  opacity: 1;
-}
-/* FIX: CTA HIGH leggibile */
-.btn.btn-danger.btn-sm {
-  background-color: var(--color-danger);
-  border-color: var(--color-danger);
-  color: #000;              /* ← TESTO NERO */
-  font-weight: 600;
-}
+          <div className="stat-card">
+            <div className="stat-icon warning">
+              <AlertCircle size={24} />
+            </div>
+            <div className="stat-info">
+              <p className="stat-label">In Scadenza (30gg)</p>
+              <h3 className="stat-value">{totals.risk}</h3>
+            </div>
+          </div>
 
-.btn.btn-danger.btn-sm:hover {
-  background-color: #ff6b6b; /* leggermente più chiaro */
-  color: #000;
+          <div className="stat-card">
+            <div className="stat-icon warning">
+              <AlertTriangle size={24} />
+            </div>
+            <div className="stat-info">
+              <p className="stat-label">Documenti Mancanti</p>
+              <h3 className="stat-value">{totals.missing}</h3>
+            </div>
+          </div>
+        </div>
+
+        <div className="risk-table-container">
+          <h2>Clienti Corporate - Ordinamento per Rischio</h2>
+
+          <div className="risk-table-scroll">
+            <table className="risk-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Risk Level</th>
+                  <th>Motivo</th>
+                  <th>Risk Score</th>
+                  <th>Scaduti</th>
+                  <th>In Scadenza</th>
+                  <th>Mancanti</th>
+                  <th>Azioni</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {clients.map((client) => {
+                  const level = client.level
+                  const color = getRiskColor(level)
+                  const reason = getTopReason(client)
+
+                  return (
+                    <tr
+                      key={client.client_id}
+                      className={`risk-row risk-${String(level).toLowerCase()}`}
+                    >
+                      <td className="client-name">
+                        <strong>{client.name}</strong>
+                      </td>
+
+                      <td>
+                        <span className="risk-badge" style={{ color }}>
+                          {level}
+                        </span>
+                      </td>
+
+                      <td>{reason}</td>
+
+                      <td>
+                        <span style={{ color, fontWeight: 600 }}>
+                          {client.score}
+                        </span>
+                      </td>
+
+                      <td>{client.expired}</td>
+                      <td>{client.risk}</td>
+                      <td>{client.missing}</td>
+
+                      <td>
+                        <Link
+                          to={`/clients/${client.client_id}`}
+                          className={getCtaClass(level)}
+                        >
+                          Vedi Dettaglio
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
