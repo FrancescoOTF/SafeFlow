@@ -1,112 +1,188 @@
-import { Link } from 'react-router-dom'
-import { Check } from 'lucide-react'
-import { stripePromise, pricingPlans } from '../lib/stripe'
-import Header from '../components/Header'
-import Footer from '../components/Footer'
-import './PricingPage.css'
+import { useState } from "react";
+import "./PricingPage.css";
+
+const plans = [
+  {
+    id: "starter",
+    name: "Starter",
+    tag: "Coming soon",
+    price: null,
+    description: "Perfect for small teams getting started.",
+    features: ["Up to 5 users", "Basic analytics", "Email support"],
+    comingSoon: true,
+    highlighted: false,
+  },
+  {
+    id: "business",
+    name: "Business",
+    tag: "Most Popular",
+    monthlyPrice: 109.9,
+    yearlyPrice: (109.9 * 12 * 0.85).toFixed(2),
+    description: "The complete SafeFlow suite for growing companies.",
+    features: [
+      "Unlimited users",
+      "Advanced analytics & reporting",
+      "Priority support",
+      "Custom integrations",
+      "Role-based access control",
+      "Audit logs",
+    ],
+    comingSoon: false,
+    highlighted: true,
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    tag: "Coming soon",
+    price: null,
+    description: "Expanded capabilities for scaling operations.",
+    features: ["Everything in Business", "API access", "SLA guarantee"],
+    comingSoon: true,
+    highlighted: false,
+  },
+];
+
+const enterprise = {
+  id: "enterprise",
+  name: "Enterprise",
+  description:
+    "Custom pricing, dedicated infrastructure, and white-glove onboarding for large organisations.",
+  features: [
+    "Dedicated infrastructure",
+    "Custom SLAs",
+    "On-premise option",
+    "Dedicated account manager",
+  ],
+};
 
 export default function PricingPage() {
-  const handleSubscribe = async (priceId) => {
-    if (!priceId) {
-      // Custom plan - redirect to contact
-      window.location.href = 'mailto:info@safeflow.it?subject=Piano Custom'
-      return
-    }
-
-    try {
-      const stripe = await stripePromise
-      
-      // Here you would call your backend to create a checkout session
-      // For now, this is a placeholder
-      const response = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ priceId }),
-      })
-
-      const session = await response.json()
-      
-      await stripe.redirectToCheckout({
-        sessionId: session.id,
-      })
-    } catch (error) {
-      console.error('Error:', error)
-      alert('Errore nel processo di pagamento. Riprova più tardi.')
-    }
-  }
+  const [yearly, setYearly] = useState(false);
 
   return (
-    <div className="pricing-page">
-      <Header />
-      
-      <section className="section pricing-hero">
-        <div className="container">
-          <h1 className="text-center">Prezzi chiari. Nessun costo nascosto.</h1>
-          <p className="pricing-subtitle text-center">
-            Scegli il piano più adatto alle dimensioni della tua azienda
+    <div className="pricing-root">
+      {/* Background decorations */}
+      <div className="pricing-bg-blob blob-1" />
+      <div className="pricing-bg-blob blob-2" />
+
+      <div className="pricing-container">
+        {/* Hero */}
+        <header className="pricing-hero">
+          <span className="pricing-eyebrow">Pricing</span>
+          <h1 className="pricing-title">
+            Simple pricing,<br />
+            <span className="pricing-title-accent">serious results.</span>
+          </h1>
+          <p className="pricing-subtitle">
+            One powerful plan, zero hidden costs. Scale your safety operations
+            without scaling your budget.
           </p>
-        </div>
-      </section>
 
-      <section className="section pricing-grid-section">
-        <div className="container">
-          <div className="pricing-grid">
-            {pricingPlans.map((plan) => (
-              <div 
-                key={plan.id} 
-                className={`pricing-card ${plan.featured ? 'featured' : ''}`}
-              >
-                {plan.featured && <div className="featured-badge">Più popolare</div>}
-                
-                <div className="pricing-header">
-                  <h3>{plan.name}</h3>
-                  <div className="pricing-price">
-                    {plan.price ? (
-                      <>
-                        <span className="currency">€</span>
-                        <span className="amount">{plan.price}</span>
-                        <span className="period">/mese</span>
-                      </>
-                    ) : (
-                      <span className="custom-price">Su misura</span>
-                    )}
-                  </div>
-                </div>
+          {/* Toggle */}
+          <div className="pricing-toggle-wrap">
+            <span className={`toggle-label ${!yearly ? "active" : ""}`}>
+              Monthly billing
+            </span>
+            <button
+              className={`pricing-toggle ${yearly ? "yearly" : "monthly"}`}
+              onClick={() => setYearly(!yearly)}
+              aria-label="Switch billing period"
+            >
+              <span className="toggle-knob" />
+            </button>
+            <span className={`toggle-label ${yearly ? "active" : ""}`}>
+              Yearly billing
+              <span className="toggle-badge">Save 15%</span>
+            </span>
+          </div>
+        </header>
 
-                <ul className="pricing-features">
-                  {plan.features.map((feature, index) => (
-                    <li key={index}>
-                      <Check size={18} />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  className={`btn ${plan.featured ? 'btn-primary' : 'btn-secondary'} btn-large pricing-cta`}
-                  onClick={() => handleSubscribe(plan.priceId)}
+        {/* Top row: 3 cards */}
+        <div className="pricing-grid-top">
+          {plans.map((plan) => (
+            <div
+              key={plan.id}
+              className={`pricing-card ${plan.highlighted ? "card-highlighted" : ""} ${plan.comingSoon ? "card-soon" : ""}`}
+            >
+              {plan.tag && (
+                <span
+                  className={`card-tag ${plan.highlighted ? "tag-accent" : "tag-soon"}`}
                 >
-                  {plan.price ? 'Inizia ora' : 'Contattaci'}
-                </button>
-              </div>
-            ))}
-          </div>
+                  {plan.tag}
+                </span>
+              )}
 
-          <div className="pricing-info">
-            <p>
-              Tutti i piani includono: supporto via email, aggiornamenti gratuiti, 
-              30 giorni di garanzia soddisfatti o rimborsati.
-            </p>
-            <p>
-              Hai bisogno di aiuto nella scelta? <Link to="/register">Richiedi una demo gratuita</Link>
-            </p>
+              <h2 className="card-name">{plan.name}</h2>
+              <p className="card-desc">{plan.description}</p>
+
+              <div className="card-price-area">
+                {plan.comingSoon ? (
+                  <span className="card-coming-soon-price">—</span>
+                ) : yearly ? (
+                  <div className="card-price">
+                    <span className="price-currency">€</span>
+                    <span className="price-amount">{plan.yearlyPrice}</span>
+                    <span className="price-period">/year</span>
+                  </div>
+                ) : (
+                  <div className="card-price">
+                    <span className="price-currency">€</span>
+                    <span className="price-amount">
+                      {plan.monthlyPrice?.toFixed(2)}
+                    </span>
+                    <span className="price-period">/month</span>
+                  </div>
+                )}
+              </div>
+
+              <ul className="card-features">
+                {plan.features.map((f) => (
+                  <li key={f}>
+                    <span className="feature-check">✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                className={`card-btn ${plan.highlighted ? "btn-accent" : "btn-ghost"}`}
+                disabled={plan.comingSoon || (plan.highlighted && yearly)}
+                onClick={() => {}} // TODO integrate Stripe checkout
+              >
+                {plan.comingSoon
+                  ? "Coming Soon"
+                  : plan.highlighted && yearly
+                    ? "Coming Soon"
+                    : "Subscribe"}
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom row: Enterprise */}
+        <div className="pricing-grid-bottom">
+          <div className="pricing-card card-enterprise">
+            <span className="card-tag tag-enterprise">Enterprise</span>
+            <h2 className="card-name">{enterprise.name}</h2>
+            <p className="card-desc">{enterprise.description}</p>
+
+            <ul className="card-features features-horizontal">
+              {enterprise.features.map((f) => (
+                <li key={f}>
+                  <span className="feature-check">✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <button
+              className="card-btn btn-outline"
+              onClick={() => {}} // TODO integrate Stripe checkout
+            >
+              Contact Us
+            </button>
           </div>
         </div>
-      </section>
-
-      <Footer />
+      </div>
     </div>
-  )
+  );
 }
