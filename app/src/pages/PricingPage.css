@@ -1,428 +1,229 @@
 /* ============================================================
-   PricingPage.css — SafeFlow (usa variabili da global.css)
+   PricingPage.css — layout ispirato a Webflow, colori SafeFlow
    ============================================================ */
 
 .pricing-page {
   min-height: 100vh;
+  background-color: var(--color-bg);
 }
 
-/* ── Hero ── */
-.pricing-hero {
-  background: linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-secondary) 100%);
-  padding: var(--spacing-3xl) 0 var(--spacing-2xl);
-  text-align: center;
+/* ── Wrapper centrato ── */
+.pricing-wrapper {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--spacing-3xl) var(--spacing-lg) var(--spacing-3xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.pricing-eyebrow {
-  display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  background: rgba(255, 106, 26, 0.1);
-  border: 1px solid rgba(255, 106, 26, 0.25);
-  padding: 0.3rem 0.85rem;
-  border-radius: 999px;
-  margin-bottom: var(--spacing-lg);
-}
-
-.pricing-subtitle {
-  font-size: 1.15rem;
+/* ── Intro ── */
+.pricing-intro {
+  font-size: 1.1rem;
   color: var(--color-text-secondary);
+  text-align: center;
   max-width: 560px;
-  margin: 0 auto var(--spacing-2xl);
+  margin: 0 0 var(--spacing-2xl);
   line-height: 1.7;
 }
 
-/* ── Toggle ── */
-.pricing-toggle-row {
+/* ── Billing toggle ── */
+.billing-toggle {
   display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-md);
   background: var(--color-bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 999px;
-  padding: 0.5rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  margin-bottom: var(--spacing-3xl);
+  gap: 4px;
 }
 
-.billing-label {
+.billing-btn {
+  padding: 0.5rem 1.5rem;
+  border-radius: calc(var(--radius-md) - 2px);
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--color-text-muted);
-  transition: color 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.billing-label.billing-active {
-  color: var(--color-text);
-}
-
-.save-badge {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--color-success);
-  background: rgba(34, 197, 94, 0.12);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  padding: 0.15rem 0.45rem;
-  border-radius: 999px;
-}
-
-.toggle-switch {
-  position: relative;
-  width: 46px;
-  height: 26px;
-  background: var(--color-bg-tertiary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
+  background: transparent;
+  border: none;
   cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.25s, border-color 0.25s;
+  transition: all 0.18s ease;
 }
 
-.toggle-switch.toggle-on {
-  background: rgba(255, 106, 26, 0.2);
-  border-color: var(--color-primary);
+.billing-btn:hover {
+  color: var(--color-text-secondary);
 }
 
-.toggle-thumb {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--color-text-muted);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s;
+.billing-btn--active {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text);
+  border: 1px solid rgba(255, 106, 26, 0.4);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
-.toggle-switch.toggle-on .toggle-thumb {
-  transform: translateX(20px);
-  background: var(--color-primary);
-}
-
-/* ── Cards section ── */
-.pricing-cards-section {
-  background-color: var(--color-bg-secondary);
-}
-
-/* Top grid: 3 colonne */
-.pricing-grid-top {
+/* ── Top 3 cards ── */
+.plans-top {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-xl);
-  margin-bottom: var(--spacing-xl);
+  gap: 1.25rem;
+  width: 100%;
+  margin-bottom: 1.25rem;
 }
 
-/* Bottom: Enterprise centrata */
-.pricing-grid-bottom {
-  max-width: 860px;
-  margin: 0 auto var(--spacing-2xl);
+/* ── Bottom Enterprise (centrata) ── */
+.plans-bottom {
+  width: 100%;
+  max-width: 400px;
 }
 
 /* ── Card base ── */
-.pricing-card {
-  background-color: var(--color-bg-tertiary);
-  border: 2px solid rgba(255, 255, 255, 0.05);
+.plan-card {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: var(--radius-xl);
   padding: var(--spacing-2xl);
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
-.pricing-card:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-lg);
-  border-color: rgba(255, 106, 26, 0.2);
-}
-
-/* ── Coming soon card ── */
-.card-soon {
-  opacity: 0.6;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.card-soon:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: rgba(255, 255, 255, 0.05);
-}
-
-.soon-label {
-  display: inline-block;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  width: fit-content;
+.plan-card:hover {
+  border-color: rgba(255, 106, 26, 0.3);
+  transform: translateY(-3px);
 }
 
 /* ── Featured card (Business) ── */
-.card-featured {
+.plan-card--featured {
   border-color: var(--color-primary);
-  background: linear-gradient(
-    145deg,
-    var(--color-bg-tertiary) 0%,
-    rgba(255, 106, 26, 0.06) 100%
-  );
-  box-shadow: 0 0 0 1px var(--color-primary), var(--shadow-glow);
+  background-color: var(--color-bg-secondary);
+  box-shadow: 0 0 0 1px var(--color-primary);
 }
 
-.card-featured:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 0 0 1px var(--color-primary), 0 20px 40px rgba(255, 106, 26, 0.25);
+.plan-card--featured:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 8px 30px rgba(255, 106, 26, 0.2);
 }
 
-.featured-badge {
-  position: absolute;
-  top: -14px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  color: white;
-  padding: 0.3rem var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: 0.72rem;
+/* ── Plan name ── */
+.plan-name {
+  font-size: 1.4rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  white-space: nowrap;
-}
-
-/* ── Enterprise card ── */
-.card-enterprise {
-  background: linear-gradient(
-    135deg,
-    var(--color-bg-tertiary) 0%,
-    rgba(255, 106, 26, 0.04) 100%
-  );
-  border-color: rgba(255, 106, 26, 0.15);
-}
-
-.enterprise-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-2xl);
-}
-
-.enterprise-text {
-  flex: 1;
-}
-
-.enterprise-eyebrow {
-  display: inline-block;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  margin-bottom: var(--spacing-sm);
-}
-
-.enterprise-text h3 {
-  margin-bottom: var(--spacing-sm);
-}
-
-.enterprise-text > p {
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-md);
-  font-size: 0.95rem;
-}
-
-.enterprise-action {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-sm);
-  flex-shrink: 0;
-}
-
-.enterprise-note {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  text-align: center;
+  color: var(--color-text);
   margin: 0;
 }
 
-/* ── Card header ── */
-.pricing-header {
-  text-align: center;
-  padding-bottom: var(--spacing-xl);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+/* ── Plan description ── */
+.plan-desc {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  min-height: 2.8rem;
 }
 
-.pricing-header h3 {
-  font-size: 1.4rem;
-  margin-bottom: var(--spacing-md);
-}
-
-.pricing-price {
+/* ── Price block ── */
+.plan-price {
   display: flex;
   align-items: baseline;
-  justify-content: center;
-  gap: 0.3rem;
+  gap: 0.2rem;
 }
 
-.currency {
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-}
-
-.amount {
+.plan-price--amount {
   font-size: 3rem;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-text);
   line-height: 1;
+  letter-spacing: -0.02em;
 }
 
-.period {
-  font-size: 0.95rem;
+.plan-price--period {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.plan-price--soon {
+  font-size: 1.5rem;
+  font-weight: 600;
   color: var(--color-text-muted);
 }
 
-.price-soon {
-  font-size: 2.2rem;
+.plan-price--custom {
+  font-size: 1.8rem;
   font-weight: 700;
-  color: var(--color-text-muted);
-  line-height: 1;
-}
-
-.yearly-note {
-  font-size: 0.8rem;
-  color: var(--color-success);
-  margin: var(--spacing-xs) 0 0;
-}
-
-/* ── Features ── */
-.pricing-features {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  flex: 1;
-}
-
-.pricing-features li {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  color: var(--color-text-secondary);
-  font-size: 0.9375rem;
-}
-
-.pricing-features svg {
-  color: var(--color-primary);
-  flex-shrink: 0;
-}
-
-/* Horizontal features layout (Enterprise) */
-.features-row {
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm) var(--spacing-xl);
-}
-
-/* ── CTA button ── */
-.pricing-cta {
-  width: 100%;
-  margin-top: auto;
-}
-
-.btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-/* ── Garanzia ── */
-.pricing-guarantee {
-  text-align: center;
-  max-width: 680px;
-  margin: var(--spacing-2xl) auto 0;
-  padding: var(--spacing-xl) var(--spacing-2xl);
-  background-color: var(--color-bg-tertiary);
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.pricing-guarantee p {
-  color: var(--color-text-secondary);
-  font-size: 0.95rem;
-  margin-bottom: var(--spacing-sm);
-}
-
-.pricing-guarantee p:last-child {
-  margin-bottom: 0;
-}
-
-.pricing-guarantee strong {
   color: var(--color-text);
 }
 
-.pricing-guarantee a {
-  color: var(--color-primary);
-  font-weight: 500;
+/* ── Subscribe button ── */
+.plan-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: var(--color-text);
+  color: var(--color-bg);
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  margin-top: auto;
 }
 
-.pricing-guarantee a:hover {
-  color: var(--color-accent);
+.plan-btn:hover:not(:disabled) {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.plan-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Featured button: arancione */
+.plan-btn--featured {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.plan-btn--featured:hover {
+  background: var(--color-primary-dark);
+  opacity: 1;
 }
 
 /* ── Responsive ── */
-@media (max-width: 960px) {
-  .pricing-grid-top {
+@media (max-width: 860px) {
+  .plans-top {
     grid-template-columns: 1fr;
-    max-width: 440px;
+    max-width: 400px;
     margin-left: auto;
     margin-right: auto;
   }
 
-  .card-featured {
+  /* Business in cima su mobile */
+  .plan-card--featured {
     order: -1;
   }
 
-  .enterprise-inner {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .features-row {
-    justify-content: center;
-  }
-
-  .enterprise-action {
-    width: 100%;
-  }
-
-  .enterprise-action .btn {
-    width: 100%;
+  .plans-bottom {
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 
-@media (max-width: 600px) {
-  .pricing-toggle-row {
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 0.5rem 1rem;
+@media (max-width: 480px) {
+  .pricing-wrapper {
+    padding: var(--spacing-2xl) var(--spacing-md);
   }
 
-  .pricing-guarantee {
-    padding: var(--spacing-lg);
+  .billing-toggle {
+    width: 100%;
+  }
+
+  .billing-btn {
+    flex: 1;
+    text-align: center;
   }
 }
