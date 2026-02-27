@@ -1,188 +1,192 @@
-import { useState } from "react";
-import "./PricingPage.css";
-
-const plans = [
-  {
-    id: "starter",
-    name: "Starter",
-    tag: "Coming soon",
-    price: null,
-    description: "Perfect for small teams getting started.",
-    features: ["Up to 5 users", "Basic analytics", "Email support"],
-    comingSoon: true,
-    highlighted: false,
-  },
-  {
-    id: "business",
-    name: "Business",
-    tag: "Most Popular",
-    monthlyPrice: 109.9,
-    yearlyPrice: (109.9 * 12 * 0.85).toFixed(2),
-    description: "The complete SafeFlow suite for growing companies.",
-    features: [
-      "Unlimited users",
-      "Advanced analytics & reporting",
-      "Priority support",
-      "Custom integrations",
-      "Role-based access control",
-      "Audit logs",
-    ],
-    comingSoon: false,
-    highlighted: true,
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    tag: "Coming soon",
-    price: null,
-    description: "Expanded capabilities for scaling operations.",
-    features: ["Everything in Business", "API access", "SLA guarantee"],
-    comingSoon: true,
-    highlighted: false,
-  },
-];
-
-const enterprise = {
-  id: "enterprise",
-  name: "Enterprise",
-  description:
-    "Custom pricing, dedicated infrastructure, and white-glove onboarding for large organisations.",
-  features: [
-    "Dedicated infrastructure",
-    "Custom SLAs",
-    "On-premise option",
-    "Dedicated account manager",
-  ],
-};
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Check } from 'lucide-react'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
+import './PricingPage.css'
 
 export default function PricingPage() {
-  const [yearly, setYearly] = useState(false);
+  const [yearly, setYearly] = useState(false)
+
+  const MONTHLY_PRICE = 109.90
+  const YEARLY_PRICE = (MONTHLY_PRICE * 12 * 0.85).toFixed(0)
 
   return (
-    <div className="pricing-root">
-      {/* Background decorations */}
-      <div className="pricing-bg-blob blob-1" />
-      <div className="pricing-bg-blob blob-2" />
+    <div className="pricing-page">
+      <Header />
 
-      <div className="pricing-container">
-        {/* Hero */}
-        <header className="pricing-hero">
+      {/* ── Hero ── */}
+      <section className="section pricing-hero">
+        <div className="container">
           <span className="pricing-eyebrow">Pricing</span>
-          <h1 className="pricing-title">
-            Simple pricing,<br />
-            <span className="pricing-title-accent">serious results.</span>
+          <h1 className="text-center">
+            Un solo piano.<br />
+            <span className="text-primary">Tutto incluso.</span>
           </h1>
-          <p className="pricing-subtitle">
-            One powerful plan, zero hidden costs. Scale your safety operations
-            without scaling your budget.
+          <p className="pricing-subtitle text-center">
+            Nessuna sorpresa, nessun costo nascosto. SafeFlow Business ti dà
+            accesso completo a tutte le funzionalità.
           </p>
 
           {/* Toggle */}
-          <div className="pricing-toggle-wrap">
-            <span className={`toggle-label ${!yearly ? "active" : ""}`}>
-              Monthly billing
+          <div className="pricing-toggle-row">
+            <span className={`billing-label ${!yearly ? 'billing-active' : ''}`}>
+              Mensile
             </span>
             <button
-              className={`pricing-toggle ${yearly ? "yearly" : "monthly"}`}
-              onClick={() => setYearly(!yearly)}
-              aria-label="Switch billing period"
+              className={`toggle-switch ${yearly ? 'toggle-on' : ''}`}
+              onClick={() => setYearly(v => !v)}
+              aria-label="Cambia periodo fatturazione"
             >
-              <span className="toggle-knob" />
+              <span className="toggle-thumb" />
             </button>
-            <span className={`toggle-label ${yearly ? "active" : ""}`}>
-              Yearly billing
-              <span className="toggle-badge">Save 15%</span>
+            <span className={`billing-label ${yearly ? 'billing-active' : ''}`}>
+              Annuale
+              <span className="save-badge">–15%</span>
             </span>
           </div>
-        </header>
+        </div>
+      </section>
 
-        {/* Top row: 3 cards */}
-        <div className="pricing-grid-top">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              className={`pricing-card ${plan.highlighted ? "card-highlighted" : ""} ${plan.comingSoon ? "card-soon" : ""}`}
-            >
-              {plan.tag && (
-                <span
-                  className={`card-tag ${plan.highlighted ? "tag-accent" : "tag-soon"}`}
-                >
-                  {plan.tag}
-                </span>
-              )}
+      {/* ── Cards ── */}
+      <section className="section pricing-cards-section">
+        <div className="container">
 
-              <h2 className="card-name">{plan.name}</h2>
-              <p className="card-desc">{plan.description}</p>
+          {/* Top row: 3 cards */}
+          <div className="pricing-grid-top">
 
-              <div className="card-price-area">
-                {plan.comingSoon ? (
-                  <span className="card-coming-soon-price">—</span>
-                ) : yearly ? (
-                  <div className="card-price">
-                    <span className="price-currency">€</span>
-                    <span className="price-amount">{plan.yearlyPrice}</span>
-                    <span className="price-period">/year</span>
-                  </div>
-                ) : (
-                  <div className="card-price">
-                    <span className="price-currency">€</span>
-                    <span className="price-amount">
-                      {plan.monthlyPrice?.toFixed(2)}
-                    </span>
-                    <span className="price-period">/month</span>
-                  </div>
-                )}
+            {/* Starter – coming soon */}
+            <div className="pricing-card card-soon">
+              <span className="soon-label">Prossimamente</span>
+              <div className="pricing-header">
+                <h3>Starter</h3>
+                <div className="pricing-price">
+                  <span className="price-soon">—</span>
+                </div>
               </div>
-
-              <ul className="card-features">
-                {plan.features.map((f) => (
-                  <li key={f}>
-                    <span className="feature-check">✓</span>
-                    {f}
-                  </li>
-                ))}
+              <ul className="pricing-features">
+                <li><Check size={16} /><span>Fino a 5 clienti</span></li>
+                <li><Check size={16} /><span>Dashboard base</span></li>
+                <li><Check size={16} /><span>Alert via email</span></li>
               </ul>
-
-              <button
-                className={`card-btn ${plan.highlighted ? "btn-accent" : "btn-ghost"}`}
-                disabled={plan.comingSoon || (plan.highlighted && yearly)}
-                onClick={() => {}} // TODO integrate Stripe checkout
-              >
-                {plan.comingSoon
-                  ? "Coming Soon"
-                  : plan.highlighted && yearly
-                    ? "Coming Soon"
-                    : "Subscribe"}
+              <button className="btn btn-secondary btn-large pricing-cta" disabled>
+                Prossimamente
               </button>
             </div>
-          ))}
-        </div>
 
-        {/* Bottom row: Enterprise */}
-        <div className="pricing-grid-bottom">
-          <div className="pricing-card card-enterprise">
-            <span className="card-tag tag-enterprise">Enterprise</span>
-            <h2 className="card-name">{enterprise.name}</h2>
-            <p className="card-desc">{enterprise.description}</p>
+            {/* Business – piano reale, evidenziato */}
+            <div className="pricing-card card-featured">
+              <div className="featured-badge">Più popolare</div>
+              <div className="pricing-header">
+                <h3>Business</h3>
+                <div className="pricing-price">
+                  {yearly ? (
+                    <>
+                      <span className="currency">€</span>
+                      <span className="amount">{YEARLY_PRICE}</span>
+                      <span className="period">/anno</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="currency">€</span>
+                      <span className="amount">109,90</span>
+                      <span className="period">/mese</span>
+                    </>
+                  )}
+                </div>
+                {yearly && (
+                  <p className="yearly-note">
+                    Equivale a €{(YEARLY_PRICE / 12).toFixed(2)}/mese
+                  </p>
+                )}
+              </div>
+              <ul className="pricing-features">
+                <li><Check size={16} /><span>Clienti corporate illimitati</span></li>
+                <li><Check size={16} /><span>Controllo scadenze illimitato</span></li>
+                <li><Check size={16} /><span>Alert email multipli</span></li>
+                <li><Check size={16} /><span>Dashboard completa</span></li>
+                <li><Check size={16} /><span>Calendario scadenze</span></li>
+                <li><Check size={16} /><span>Storico completo</span></li>
+              </ul>
+              <button
+                className="btn btn-primary btn-large pricing-cta"
+                onClick={() => {}} // TODO integrate Stripe checkout
+              >
+                {yearly ? 'Abbonati annuale' : 'Abbonati ora'}
+              </button>
+            </div>
 
-            <ul className="card-features features-horizontal">
-              {enterprise.features.map((f) => (
-                <li key={f}>
-                  <span className="feature-check">✓</span>
-                  {f}
-                </li>
-              ))}
-            </ul>
+            {/* Pro – coming soon */}
+            <div className="pricing-card card-soon">
+              <span className="soon-label">Prossimamente</span>
+              <div className="pricing-header">
+                <h3>Pro</h3>
+                <div className="pricing-price">
+                  <span className="price-soon">—</span>
+                </div>
+              </div>
+              <ul className="pricing-features">
+                <li><Check size={16} /><span>Tutto di Business</span></li>
+                <li><Check size={16} /><span>Accesso API</span></li>
+                <li><Check size={16} /><span>Garanzia SLA</span></li>
+                <li><Check size={16} /><span>Supporto prioritario</span></li>
+              </ul>
+              <button className="btn btn-secondary btn-large pricing-cta" disabled>
+                Prossimamente
+              </button>
+            </div>
 
-            <button
-              className="card-btn btn-outline"
-              onClick={() => {}} // TODO integrate Stripe checkout
-            >
-              Contact Us
-            </button>
           </div>
+
+          {/* Bottom row: Enterprise centrata */}
+          <div className="pricing-grid-bottom">
+            <div className="pricing-card card-enterprise">
+              <div className="enterprise-inner">
+                <div className="enterprise-text">
+                  <span className="enterprise-eyebrow">Per grandi realtà</span>
+                  <h3>Enterprise</h3>
+                  <p>
+                    Pricing su misura, infrastruttura dedicata e onboarding
+                    personalizzato per organizzazioni di grandi dimensioni.
+                  </p>
+                  <ul className="pricing-features features-row">
+                    <li><Check size={16} /><span>Infrastruttura dedicata</span></li>
+                    <li><Check size={16} /><span>SLA personalizzato</span></li>
+                    <li><Check size={16} /><span>Opzione on-premise</span></li>
+                    <li><Check size={16} /><span>Account manager dedicato</span></li>
+                  </ul>
+                </div>
+                <div className="enterprise-action">
+                  <button
+                    className="btn btn-primary btn-large"
+                    onClick={() => {
+                      window.location.href = 'mailto:info@safeflow.it?subject=Piano Enterprise'
+                    }}
+                  >
+                    Contattaci
+                  </button>
+                  <p className="enterprise-note">Risposta entro 24 ore lavorative</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Garanzia */}
+          <div className="pricing-guarantee">
+            <p>
+              Tutti i piani includono: supporto via email, aggiornamenti gratuiti e{' '}
+              <strong>30 giorni di garanzia soddisfatti o rimborsati.</strong>
+            </p>
+            <p>
+              Hai bisogno di aiuto nella scelta?{' '}
+              <Link to="/register">Richiedi una demo gratuita</Link>
+            </p>
+          </div>
+
         </div>
-      </div>
+      </section>
+
+      <Footer />
     </div>
-  );
+  )
 }
