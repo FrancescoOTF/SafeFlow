@@ -44,7 +44,7 @@ export default function SettingsAccount() {
     },
     {
       id: 'name',
-      icon: UserPen,
+      icon: UserCog,
       label: 'Nome e Cognome',
       desc: 'Aggiorna i dati personali',
     },
