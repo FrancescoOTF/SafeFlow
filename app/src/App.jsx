@@ -10,6 +10,12 @@ import DashboardPage from './pages/DashboardPage'
 import ClientsPage from './pages/ClientsPage'
 import ClientDetailPage from './pages/ClientDetailPage'
 import PricingPage from './pages/PricingPage'
+import SettingsLayout from './pages/settings/SettingsLayout'
+import SettingsGeneral from './pages/settings/SettingsGeneral'
+import SettingsAccount from './pages/settings/SettingsAccount'
+import SettingsNotifications from './pages/settings/SettingsNotifications'
+import SettingsPlan from './pages/settings/SettingsPlan'
+import SettingsBilling from './pages/settings/SettingsBilling'
 
 // Styles
 import './styles/global.css'
@@ -19,13 +25,11 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setLoading(false)
     })
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -77,6 +81,17 @@ function App() {
           path="/clients/:id"
           element={session ? <ClientDetailPage /> : <Navigate to="/login" />}
         />
+        <Route
+          path="/settings"
+          element={session ? <SettingsLayout /> : <Navigate to="/login" />}
+        >
+          <Route index element={<Navigate to="general" replace />} />
+          <Route path="general"       element={<SettingsGeneral />} />
+          <Route path="account"       element={<SettingsAccount />} />
+          <Route path="notifications" element={<SettingsNotifications />} />
+          <Route path="plan"          element={<SettingsPlan />} />
+          <Route path="billing"       element={<SettingsBilling />} />
+        </Route>
       </Routes>
     </Router>
   )
