@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Navigate, useLocation } from 'react-router-dom'
-import DashboardNav from '../components/DashboardNav'
+import DashboardNav from '../../components/DashboardNav'
 import './SettingsLayout.css'
 
 const subNav = [
