@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 
-// Pages
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -17,7 +16,6 @@ import SettingsNotifications from './pages/settings/SettingsNotifications'
 import SettingsPlan from './pages/settings/SettingsPlan'
 import SettingsBilling from './pages/settings/SettingsBilling'
 
-// Styles
 import './styles/global.css'
 
 function App() {
